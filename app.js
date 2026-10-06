@@ -1,6 +1,6 @@
 const KEY = "dirops-tracker-ui-v3";
 const statuses = ["Selesai", "On Progress", "On Track", "Terkendala", "At Risk", "Belum Mulai"];
-const viewToCollection = { dirops: "dirops", kolegial: "kolegial", tracker: "tracker", monev: "monev", actions: "actions", priority: "priority", users: "users", master: "master" };
+const viewToCollection = { dirops: "dirops", kolegial: "kolegial", tracker: "tracker", monev: "monev", actions: "actions", users: "users", master: "master" };
 const state = load();
 if (!["Super Admin","Direksi","Kepala Divisi","Admin/Sekretaris"].includes(state.currentRole)) state.currentRole = "Admin/Sekretaris";
 if (!state.selectedYear) state.selectedYear = "2026";
@@ -73,6 +73,25 @@ const migratedSettingIds = {};
 }));
 ["dirops","kolegial","tracker","monev","actions","priority"].forEach(col => (state[col] || []).forEach(item => { if(!item.tahun) item.tahun = "2026"; }));
 ["dirops","kolegial"].forEach(type => (state.kpiMaster[type] || []).forEach(item => { if(!item.tahun) item.tahun = "2026"; }));
+(state.tracker || []).forEach((item, index) => {
+  if(!item.no) item.no = String(index + 1);
+  if(!item.bulan) item.bulan = "Januari";
+  if(!item.catatanTerakhir) item.catatanTerakhir = item.catatan || "";
+  if(!Array.isArray(item.riwayatProgress)){
+    item.riwayatProgress = [{
+      id:id(),
+      tanggal:item.updatedAt || "-",
+      bulan:item.bulan || "-",
+      status:item.status || "-",
+      progress:+item.progress || 0,
+      catatan:item.catatanTerakhir || item.catatan || "-"
+    }];
+  }
+});
+(state.actions || []).forEach(item => {
+  if(!item.tindakLanjut) item.tindakLanjut = item.catatan || "";
+  if(!item.picDivisi) item.picDivisi = item.divisi || item.akses || "Lintas Divisi";
+});
 (state.tracker || []).map(item=>item.divisi).filter(Boolean).forEach(divisi=>{
   const exists = (state.master || []).some(item=>String(item.tipe || "").toLowerCase()==="divisi" && item.nama===divisi);
   if(!exists) state.master.push({ id:id(), tipe:"Divisi", nama:divisi, keterangan:"Tersinkron dari Tracker Divisi" });
@@ -90,6 +109,7 @@ let reportTab = "Dirops";
 let reportMonth = "September";
 let reportYear = "2026";
 let settingSearch = "";
+let activeMasterSettingId = "";
 const listViewState = {
   monev: { search: "", entries: 8, status: "Semua Status", secondary: "Semua Prioritas" },
   actions: { search: "", entries: 8, status: "Semua Status", secondary: "Semua PIC" },
@@ -98,10 +118,10 @@ const listViewState = {
 let modal = {};
 let tableSeq = 0;
 const roleViews = {
-  "Super Admin": ["dashboard","dirops","kolegial","tracker","monev","actions","priority","reports","master","users"],
-  "Direksi": ["dashboard","dirops","kolegial","tracker","monev","actions","priority","reports","master"],
-  "Admin/Sekretaris": ["dashboard","dirops","kolegial","tracker","monev","actions","priority","reports"],
-  "Kepala Divisi": ["dashboard","dirops","kolegial","tracker","reports"]
+  "Super Admin": ["dashboard","dirops","kolegial","tracker","monev","actions","master","users"],
+  "Direksi": ["dashboard","dirops","kolegial","tracker","monev","actions","master"],
+  "Admin/Sekretaris": ["dashboard","dirops","kolegial","tracker","monev","actions"],
+  "Kepala Divisi": ["dashboard","dirops","kolegial","tracker"]
 };
 
 function id() { return Math.random().toString(36).slice(2, 10); }
@@ -121,10 +141,10 @@ function seed() {
       { id:id(), kode:"KOL.3", indikator:"Standardisasi Struktur Organisasi", satuan:"Status", target:100, tw1:25, tw2:70, tw3:85, tw4:95, bobot:20, catatan:"Menunggu final penetapan organisasi." },
     ],
     tracker: [
-      { id:id(), divisi:"KSR", pic:"R. Pratama", pekerjaan:"Audit Kepatuhan & Sertifikasi HSE", output:"Sertifikat ISO 45001 dan laporan audit", deadline:"15 Feb", status:"Selesai", progress:100, catatan:"Sertifikasi ISO 45001 diselesaikan penuh." },
-      { id:id(), divisi:"KPR/PIER", pic:"B. Nugroho", pekerjaan:"Pembangunan Drainase Primer PIER", output:"Drainase primer berfungsi sesuai spesifikasi", deadline:"28 Feb", status:"On Progress", progress:75, catatan:"Tahap pengerasan beton selesai." },
-      { id:id(), divisi:"JSP", pic:"D. Sari", pekerjaan:"Konstruksi Pipa Daur Ulang IPAL", output:"Jaringan pipa daur ulang siap diuji", deadline:"10 Mar", status:"Terkendala", progress:40, catatan:"Terkendala pengiriman fitting pipa utama." },
-      { id:id(), divisi:"Logistik", pic:"A. Wijaya", pekerjaan:"Standarisasi SOP Gudang Logistik", output:"SOP gudang logistik disahkan", deadline:"22 Mar", status:"On Progress", progress:15, catatan:"Kick-off dan review draft pertama." },
+      { id:id(), no:"1", divisi:"KSR", pic:"R. Pratama", pekerjaan:"Audit Kepatuhan & Sertifikasi HSE", output:"Sertifikat ISO 45001 dan laporan audit", deadline:"15 Feb", bulan:"Februari", status:"Selesai", progress:100, catatan:"Sertifikasi ISO 45001 diselesaikan penuh.", catatanTerakhir:"Sertifikasi ISO 45001 diselesaikan penuh." },
+      { id:id(), no:"2", divisi:"KPR/PIER", pic:"B. Nugroho", pekerjaan:"Pembangunan Drainase Primer PIER", output:"Drainase primer berfungsi sesuai spesifikasi", deadline:"28 Feb", bulan:"Februari", status:"On Progress", progress:75, catatan:"Tahap pengerasan beton selesai.", catatanTerakhir:"Tahap pengerasan beton selesai." },
+      { id:id(), no:"3", divisi:"JSP", pic:"D. Sari", pekerjaan:"Konstruksi Pipa Daur Ulang IPAL", output:"Jaringan pipa daur ulang siap diuji", deadline:"10 Mar", bulan:"Maret", status:"Terkendala", progress:40, catatan:"Terkendala pengiriman fitting pipa utama.", catatanTerakhir:"Terkendala pengiriman fitting pipa utama." },
+      { id:id(), no:"4", divisi:"Logistik", pic:"A. Wijaya", pekerjaan:"Standarisasi SOP Gudang Logistik", output:"SOP gudang logistik disahkan", deadline:"22 Mar", bulan:"Maret", status:"On Progress", progress:15, catatan:"Kick-off dan review draft pertama.", catatanTerakhir:"Kick-off dan review draft pertama." },
     ],
     monev: [
       { id:id(), agenda:"Audit ESG Terpadu Holding", prioritas:"Kritis", pic:"D. Pratama", target:"20 Jan", status:"At Risk", progress:40, catatan:"Keterlambatan dokumen pendukung." },
@@ -133,10 +153,10 @@ function seed() {
       { id:id(), agenda:"Pembangunan Green Belt Buffer", prioritas:"Tindak Lanjut", pic:"R. Handoko", target:"15 Feb", status:"On Progress", progress:55, catatan:"Pendataan lahan buffer berjalan." },
     ],
     actions: [
-      { id:id(), agenda:"Revisi SOP Logistik", target:"15 Jan", pic:"A. Wijaya", status:"Selesai", progress:100, catatan:"Dokumen final disetujui." },
-      { id:id(), agenda:"Audit KSR Triwulan I", target:"18 Jan", pic:"R. Pratama", status:"On Progress", progress:85, catatan:"Laporan temuan sudah siap." },
-      { id:id(), agenda:"Zero Waste Plant", target:"22 Jan", pic:"D. Sari", status:"Terkendala", progress:40, catatan:"Vendor belum konfirmasi jadwal." },
-      { id:id(), agenda:"Monev Danareksa Q1", target:"25 Jan", pic:"B. Nugroho", status:"On Progress", progress:75, catatan:"Data sudah terkumpul." },
+      { id:id(), agenda:"Revisi SOP Logistik", target:"15 Jan", pic:"A. Wijaya", picDivisi:"Logistik", tindakLanjut:"Finalisasi sosialisasi SOP", status:"Selesai", progress:100, catatan:"Dokumen final disetujui." },
+      { id:id(), agenda:"Audit KSR Triwulan I", target:"18 Jan", pic:"R. Pratama", picDivisi:"KSR", tindakLanjut:"Lengkapi bukti tindak lanjut temuan", status:"On Progress", progress:85, catatan:"Laporan temuan sudah siap." },
+      { id:id(), agenda:"Zero Waste Plant", target:"22 Jan", pic:"D. Sari", picDivisi:"JSP", tindakLanjut:"Follow up jadwal vendor", status:"Terkendala", progress:40, catatan:"Vendor belum konfirmasi jadwal." },
+      { id:id(), agenda:"Monev Danareksa Q1", target:"25 Jan", pic:"B. Nugroho", picDivisi:"KPR/PIER", tindakLanjut:"Konsolidasi data pendukung", status:"On Progress", progress:75, catatan:"Data sudah terkumpul." },
     ],
     priority: [
       { id:id(), kode:"OP.4 (JSP)", isu:"Vendor terlambat mengirimkan pipa fitting utama IPAL JSP", dampak:"Keterlambatan Proyek", pic:"Kadiv JSP", status:"Tertunda", mitigasi:"Kirim surat peringatan dan cari alternatif vendor lokal.", evidence:"Surat_Teguran_V3.pdf" },
@@ -163,7 +183,7 @@ function notificationType(msg=""){
   const text = msg.toLowerCase();
   if(text.includes("dirops") || text.includes("kolegial") || text.includes("tw")) return "Kinerja";
   if(text.includes("tracker") || text.includes("monev") || text.includes("actions")) return "Monitoring";
-  if(text.includes("priority") || text.includes("isu")) return "Isu";
+  if(text.includes("priority") || text.includes("isu")) return "Monitoring";
   if(text.includes("laporan") || text.includes("export")) return "Laporan";
   return "Sistem";
 }
@@ -205,8 +225,7 @@ function renderProfile(){
 function currentNotifications(){
   const riskItems = [
     ...state.tracker.filter(x=>["At Risk","Terkendala"].includes(x.status)).map(x=>({type:"Monitoring", message:`${x.divisi}: ${x.pekerjaan} perlu perhatian`, time:"Status aktif", read:false})),
-    ...state.monev.filter(x=>["At Risk","Terkendala"].includes(x.status)).map(x=>({type:"Monitoring", message:`Monev: ${x.agenda} berstatus ${x.status}`, time:"Status aktif", read:false})),
-    ...state.priority.filter(x=>["At Risk","Terkendala","Tertunda"].includes(x.status)).map(x=>({type:"Isu", message:`Isu prioritas: ${x.isu}`, time:"Status aktif", read:false}))
+    ...state.monev.filter(x=>["At Risk","Terkendala"].includes(x.status)).map(x=>({type:"Monitoring", message:`Monev: ${x.agenda} berstatus ${x.status}`, time:"Status aktif", read:false}))
   ];
   return [...(state.notifications || []), ...riskItems].slice(0, 12);
 }
@@ -267,9 +286,12 @@ const achievement = (x,key="latest") => {
   return x.polaritas === "Min" ? Math.min(target / actual, 1) : Math.min(actual / target, 1);
 };
 const score = x => achievement(x) * (+x.bobot||0);
-const cls = s => s==="Selesai"||s==="Tereksekusi"||s==="Aktif"||s==="Open" ? "done" : s==="Terkendala"||s==="At Risk"||s==="Tertunda" ? "risk" : s==="Belum Mulai"||s==="Terkunci"||s==="Closed" ? "idle" : s==="On Track" ? "track" : "progress";
+const cls = s => s==="Selesai"||s==="Tereksekusi"||s==="Aktif"||s==="Open"||s==="Active" ? "done" : s==="Terkendala"||s==="At Risk"||s==="Tertunda" ? "risk" : s==="Belum Mulai"||s==="Terkunci"||s==="Closed"||s==="Inactive" ? "idle" : s==="On Track" ? "track" : "progress";
 const pill = s => `<span class="pill ${cls(s)}">${esc(s)}</span>`;
 const actions = (col,id) => `<div class="actions"><button class="icon" title="View" data-view-item="${col}" data-id="${id}"><i data-lucide="eye"></i></button>${canDelete(col) ? `<button class="icon delete" title="Hapus" data-delete="${col}" data-id="${id}"><i data-lucide="trash-2"></i></button>` : ""}</div>`;
+const trackerActions = id => `<div class="actions"><button class="icon" title="View Riwayat" data-view-item="tracker" data-id="${id}"><i data-lucide="eye"></i></button>${canDelete("tracker") ? `<button class="icon delete" title="Hapus" data-delete="tracker" data-id="${id}"><i data-lucide="trash-2"></i></button>` : ""}</div>`;
+const userActions = id => `<div class="actions"><button class="icon" title="View" data-view-item="users" data-id="${id}"><i data-lucide="eye"></i></button>${isAdmin() ? `<button class="icon" title="Edit User" data-edit="users" data-id="${id}"><i data-lucide="pencil"></i></button><button class="icon delete" title="Hapus" data-delete="users" data-id="${id}"><i data-lucide="trash-2"></i></button>` : ""}</div>`;
+const exportButton = title => `<button class="soft-btn" data-export="${esc(title)}"><i data-lucide="download"></i> Download</button>`;
 const kpiMasterActions = (type,id) => `<div class="actions"><button class="icon" title="View" data-view-item="kpiMaster${type}" data-id="${id}"><i data-lucide="eye"></i></button><button class="icon delete" title="Hapus" data-delete="kpiMaster${type}" data-id="${id}"><i data-lucide="trash-2"></i></button></div>`;
 function byYear(rows, year=state.selectedYear){ return (rows || []).filter(item=>String(item.tahun || year) === String(year)); }
 function mastersByYear(type){ return byYear(state.kpiMaster[type] || []); }
@@ -303,14 +325,14 @@ function canAccessTrackerRow(item){
 function canSetupMaster(){ return isAdmin() || isDirector(); }
 function canCreate(col){
   if(isAdmin()) return true;
-  if(isDirector()) return ["kpiMaster","kpiMasterDirops","kpiMasterKolegial","tracker","monev","actions","priority"].includes(col);
-  if(isSecretary()) return ["tracker","monev","actions","priority"].includes(col);
+  if(isDirector()) return ["kpiMaster","kpiMasterDirops","kpiMasterKolegial","tracker","monev","actions"].includes(col);
+  if(isSecretary()) return ["tracker","monev","actions"].includes(col);
   if(isKadiv()) return false;
   return false;
 }
 function canDelete(col){
   if(isAdmin()) return true;
-  if(isDirector()) return ["kpiMasterDirops","kpiMasterKolegial","tracker","monev","actions","priority"].includes(col);
+  if(isDirector()) return ["kpiMasterDirops","kpiMasterKolegial","tracker","monev","actions"].includes(col);
   return false;
 }
 function allowedViews(){
@@ -385,13 +407,13 @@ function canEditField(col, field, row=null){
   if(isKadiv() && ["dirops","kolegial"].includes(col)){
     return canAccessKpiRow(row) && ["tw1","tw2","tw3","tw4","catatan"].includes(field);
   }
-  if(isKadiv()) return col==="tracker" && canAccessTrackerRow(row) && ["output","status","progress","catatan"].includes(field);
+  if(isKadiv()) return col==="tracker" && canAccessTrackerRow(row) && ["output","bulan","status","progress","catatanTerakhir"].includes(field);
   const editable = {
     dirops:["tw1","tw2","tw3","tw4","catatan"],
     kolegial:["tw1","tw2","tw3","tw4","catatan"],
-    tracker:["output","status","progress","catatan"],
+    tracker:["no","divisi","pic","pekerjaan","output","deadline","bulan","status","progress","catatanTerakhir"],
     monev:["status","progress","catatan"],
-    actions:["status","progress","catatan"],
+    actions:["tindakLanjut","picDivisi","status","progress","catatan"],
     priority:["status","mitigasi","evidence"],
     users:[],
     master:[]
@@ -426,6 +448,7 @@ function stat(label, value, delta="", tone="", icon="chart-no-axes-combined"){ r
 function filterDropdown(key, value, options, attrs=""){
   return `<div class="ui-dropdown table-dropdown" data-dropdown="${key}"><button type="button" class="ui-dropdown-btn" data-dropdown-toggle="${key}"><strong>${esc(value)}</strong><i data-lucide="chevron-down" class="chev"></i></button><div class="ui-dropdown-menu">${options.map(option=>`<button type="button" class="${String(option)===String(value)?"active":""}" data-table-filter="${key}" data-value="${esc(option)}" ${attrs}>${esc(option)}</button>`).join("")}</div></div>`;
 }
+function yearFilter(key){ return filterDropdown(key, state.selectedYear, ["2024","2025","2026","2027","2028"]); }
 function syncMasterKpi(type, master){
   if(master.statusValidasi !== "Final") return;
   const structuralFields = ["kode","kategori","kelompok","indikator","penanggungJawab","satuan","target","targetTw1","targetTw2","targetTw3","targetTw4","bobot","polaritas","settingId","settingName","isOpen","publishedAt"];
@@ -659,7 +682,7 @@ function sidePanels(){
   const itemRows = state.actions.slice(0,4).map(x=>`<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.target)}</td><td><b style="color:${x.progress<50?"var(--danger)":"var(--teal)"}">${x.progress}%</b></td><td>${esc(x.pic)}</td></tr>`).join("");
   return `<div class="panel"><div class="panel-head"><h3>Status Monev Danareksa</h3><span>•••</span></div>${donut(state.monev.length,[["Selesai",1],["On Progress",2,"yellow"],["At Risk",1,"red"],["Belum Mulai",0,"gray"]])}</div>
   <div class="panel"><div class="panel-head"><h3>Action Items BOD-BOC</h3><span>•••</span></div>${table(["Agenda","Target","Prog","PIC"],itemRows)}</div>
-  <div class="panel"><div class="panel-head"><div><h2>Isu yang Perlu Perhatian Segera</h2><span class="subtle">Ringkasan risiko strategis dan prioritas tindakan</span></div><span>•••</span></div>${donut(4,[["Kritis","1 isu","red"],["Perlu Tindak Lanjut","2 isu","yellow"],["Pantau","1 isu","gray"]],"var(--red)")}<div style="display:grid;gap:10px;margin-top:18px">${state.priority.map(x=>`<div class="progress-card"><strong>${esc(x.isu)}</strong><br>${pill(x.status)} <span class="subtle">1 isu</span></div>`).join("")}</div></div>
+  <div class="panel"><div class="panel-head"><div><h2>Action Items yang Perlu Perhatian</h2><span class="subtle">Ringkasan tindak lanjut dan status penyelesaian</span></div><span>•••</span></div>${donut(state.actions.length || 1,[["Selesai",`${state.actions.filter(x=>x.status==="Selesai").length} action`,"green"],["Berjalan",`${state.actions.filter(x=>["On Progress","On Track"].includes(x.status)).length} action`,"yellow"],["Terkendala",`${state.actions.filter(x=>["At Risk","Terkendala"].includes(x.status)).length} action`,"red"]],"var(--teal)")}<div style="display:grid;gap:10px;margin-top:18px">${state.actions.slice(0,3).map(x=>`<div class="progress-card"><strong>${esc(x.agenda)}</strong><br>${pill(x.status)} <span class="subtle">${esc(x.picDivisi||x.pic||"-")}</span></div>`).join("")}</div></div>
   <div class="panel"><div class="panel-head"><h3>Aktivitas Terkini</h3><span>•••</span></div><div class="legend">${state.audit.slice(0,5).map(x=>`<div class="legend-row"><span><i class="dot"></i>${esc(x)}</span></div>`).join("")}</div></div>`;
 }
 
@@ -667,7 +690,7 @@ function renderKpi(col,title){
   const allData=currentRows(col);
   const data=allData.filter(canAccessKpiRow);
   const total=Math.round(data.reduce((a,b)=>a+score(b),0));
-  const createButton = canCreate(col) ? `<button class="primary-btn" data-create="${col}"><i data-lucide="plus"></i> Tambah KPI</button>` : "";
+  const createButton = "";
   if (col === "kolegial") {
     const rows = data.map((x,i)=>{
       const capaian = achievement(x) * 100;
@@ -680,7 +703,7 @@ function renderKpi(col,title){
       return `<tr><td>${i+1}</td><td>${esc(x.kategori)}</td><td><strong>${esc(x.indikator)}</strong></td><td>${esc(x.penanggungJawab||"Lintas Divisi")}</td><td>${esc(x.satuan)}</td><td>${x.bobot}%</td><td>${esc(x.polaritas||"Max")}</td><td>${esc(x.target)}</td><td>${esc(t1)}</td><td>${esc(t2)}</td><td>${esc(t3)}</td><td>${esc(t4)}</td><td>${inputs[0]}</td><td>${inputs[1]}</td><td>${inputs[2]}</td><td><b style="color:var(--teal)">${inputs[3]}</b></td><td>${inputs[4]}</td><td><b style="color:${capaian<60?"var(--red)":"var(--teal)"}">${Math.round(capaian*10)/10}%</b></td><td><b>${Math.round(nilai*10)/10}%</b></td><td>${actions(col,x.id)}</td></tr>`;
     }).join("");
     const totalRows = `<div class="kpi-total-list"><div class="grand"><span>TOTAL NILAI KPI DIREKSI KOLEGIAL</span><strong>${total}%</strong></div></div>`;
-    $(`#${col}`).innerHTML = `${hero(title)}<div class="panel"><div class="panel-head"><div><h2>Realisasi Triwulan</h2></div>${createButton}</div>${table(["No","Kategori","Key Performance Indicator","Penanggung Jawab","Satuan","Bobot","Polaritas",`Target Tahunan ${state.selectedYear}`,"T.TW1","T.TW2","T.TW3","T.TW4","Realisasi TW1","Realisasi TW2","Realisasi TW3","Realisasi TW4","Catatan / Update","Capaian %","Nilai Tertimbang","Aksi"],rows,"kpi-table kpi-kolegial")}${totalRows}</div>`;
+    $(`#${col}`).innerHTML = `${hero(title)}<div class="panel"><div class="panel-head"><div><h2>Realisasi Triwulan</h2></div><div class="panel-actions">${yearFilter("kpiYear")}${exportButton("Laporan KPI Kolegial")}${createButton}</div></div>${table(["No","Kategori","Key Performance Indicator","Penanggung Jawab","Satuan","Bobot","Polaritas",`Target Tahunan ${state.selectedYear}`,"T.TW1","T.TW2","T.TW3","T.TW4","Realisasi TW1","Realisasi TW2","Realisasi TW3","Realisasi TW4","Catatan / Update","Capaian %","Nilai Tertimbang","Aksi"],rows,"kpi-table kpi-kolegial")}${totalRows}</div>`;
     return;
   }
   const sectioned = col==="dirops"
@@ -708,7 +731,7 @@ function renderKpi(col,title){
         <div class="grand"><span>TOTAL NILAI KPI DIREKTUR OPERASI</span><strong>${total}%</strong></div>
       </div>`
     : `<div class="kpi-total-list"><div class="grand"><span>TOTAL NILAI KPI DIREKSI KOLEGIAL</span><strong>${total}%</strong></div></div>`;
-  $(`#${col}`).innerHTML = `${hero(title)}<div class="panel"><div class="panel-head"><div><h2>Realisasi Triwulan</h2></div>${createButton}</div>${table(["No","Key Performance Indicator","Penanggung Jawab","Satuan","Bobot","Polaritas",`Target Tahunan ${state.selectedYear}`,"Target TW1","Target TW2","Target TW3","Target TW4","Realisasi TW1","Realisasi TW2","Realisasi TW3","Realisasi TW4","Catatan / Update","Capaian % (realisasi terakhir vs target tahunan)","Nilai Tertimbang (Capaian % x Bobot)","Aksi"],rows,"kpi-table kpi-dirops")}${totalRows}</div>`;
+  $(`#${col}`).innerHTML = `${hero(title)}<div class="panel"><div class="panel-head"><div><h2>Realisasi Triwulan</h2></div><div class="panel-actions">${yearFilter("kpiYear")}${exportButton(col==="dirops"?"Laporan KPI Dirops":"Laporan KPI Kolegial")}${createButton}</div></div>${table(["No","Key Performance Indicator","Penanggung Jawab","Satuan","Bobot","Polaritas",`Target Tahunan ${state.selectedYear}`,"Target TW1","Target TW2","Target TW3","Target TW4","Realisasi TW1","Realisasi TW2","Realisasi TW3","Realisasi TW4","Catatan / Update","Capaian % (realisasi terakhir vs target tahunan)","Nilai Tertimbang (Capaian % x Bobot)","Aksi"],rows,"kpi-table kpi-dirops")}${totalRows}</div>`;
 }
 
 function renderTracker(){
@@ -717,16 +740,16 @@ function renderTracker(){
   const filtered = data.filter(item=>{
     const matchesDivision = trackerDivisionFilter === "Semua Divisi" || item.divisi === trackerDivisionFilter;
     const matchesStatus = trackerStatusFilter === "Semua Status" || item.status === trackerStatusFilter;
-    const matchesSearch = !query || [item.divisi,item.pic,item.pekerjaan,item.output,item.deadline,item.status,item.catatan].some(value=>String(value||"").toLowerCase().includes(query));
+    const matchesSearch = !query || [item.no,item.divisi,item.pic,item.pekerjaan,item.output,item.deadline,item.bulan,item.status,item.catatan,item.catatanTerakhir].some(value=>String(value||"").toLowerCase().includes(query));
     return matchesDivision && matchesStatus && matchesSearch;
   });
   const completed = data.filter(item=>item.status === "Selesai").length;
   const attention = data.filter(item=>["At Risk","Terkendala"].includes(item.status)).length;
   const divisions = divisionOptions(data);
-  const rows=filtered.map(x=>`<tr><td><strong>${esc(x.divisi)}</strong></td><td>${esc(x.pic)}</td><td><strong>${esc(x.pekerjaan)}</strong></td><td>${inputCell(x.output||"", "tracker", x.id, "output", "textarea")}</td><td>${esc(x.deadline)}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions("tracker",x.id)}</td></tr>`).join("") || `<tr><td colspan="9" class="empty-state">Tidak ada agenda yang cocok dengan filter.</td></tr>`;
+  const rows=filtered.map(x=>`<tr><td><strong>${esc(x.divisi)}</strong></td><td>${esc(x.pic)}</td><td><strong>${esc(x.pekerjaan)}</strong></td><td>${inputCell(x.output||"", "tracker", x.id, "output", "textarea")}</td><td>${esc(x.deadline)}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatanTerakhir || x.catatan)}</td><td>${trackerActions(x.id)}</td></tr>`).join("") || `<tr><td colspan="9" class="empty-state">Tidak ada agenda yang cocok dengan filter.</td></tr>`;
   const toolbar = `<div class="tracker-toolbar"><label class="entries-control"><span>Entries</span>${filterDropdown("trackerEntries", trackerEntries, [5,8,10,25])}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(trackerSearch)}" placeholder="Cari agenda, PIC, divisi..." data-tracker-search></div></label><label class="tracker-filter"><span>Divisi</span>${filterDropdown("trackerDivision", trackerDivisionFilter, ["Semua Divisi", ...divisions])}</label><label class="tracker-filter"><span>Status</span>${filterDropdown("trackerStatus", trackerStatusFilter, ["Semua Status", ...statuses])}</label></div>`;
   const createButton = canCreate("tracker") ? `<button class="primary-btn" data-create="tracker"><i data-lucide="plus"></i> Tambah Agenda</button>` : "";
-  $("#tracker").innerHTML = `${hero("Tracker Divisi")}<div class="cards-row tracker-summary">${stat("Total Agenda",`${data.length}`,"","","list-checks")}${stat("Rata-rata Progress",`${avg(data)}%`,"","warn","chart-no-axes-combined")}${stat("Selesai",`${completed}`,"","","circle-check")}${stat("Perlu Perhatian",`${attention}`,"","danger","triangle-alert")}</div><div class="panel tracker-panel"><div class="panel-head"><div><h2>Daftar Tracker Divisi</h2></div>${createButton}</div>${toolbar}${table(["Divisi","PIC","Pekerjaan / Follow-Up","Output yang Diharapkan","Deadline","Status","Progress","Catatan","Aksi"],rows,"tracker-table",trackerEntries)}</div>`;
+  $("#tracker").innerHTML = `${hero("Tracker Divisi")}<div class="cards-row tracker-summary">${stat("Total Agenda",`${data.length}`,"","","list-checks")}${stat("Rata-rata Progress",`${avg(data)}%`,"","warn","chart-no-axes-combined")}${stat("Selesai",`${completed}`,"","","circle-check")}${stat("Perlu Perhatian",`${attention}`,"","danger","triangle-alert")}</div><div class="panel tracker-panel"><div class="panel-head"><div><h2>Daftar Tracker Divisi</h2></div><div class="panel-actions">${exportButton("Laporan Tracker Divisi")}${createButton}</div></div>${toolbar}${table(["Divisi","PIC","Pekerjaan / Follow-Up","Output yang Diharapkan","Deadline","Status","Progress","Catatan Terakhir","Aksi"],rows,"tracker-table",trackerEntries)}</div>`;
 }
 
 function renderSimpleList(col,title,desc){
@@ -735,7 +758,7 @@ function renderSimpleList(col,title,desc){
   const viewState = listViewState[col];
   const query = viewState.search.trim().toLowerCase();
   const filtered = data.filter(item=>{
-    const matchesSearch = !query || [item.agenda,item.prioritas,item.target,item.pic,item.status,item.catatan].some(value=>String(value||"").toLowerCase().includes(query));
+    const matchesSearch = !query || [item.agenda,item.prioritas,item.target,item.pic,item.picDivisi,item.tindakLanjut,item.status,item.catatan].some(value=>String(value||"").toLowerCase().includes(query));
     const matchesStatus = viewState.status === "Semua Status" || item.status === viewState.status;
     return matchesSearch && matchesStatus;
   });
@@ -744,32 +767,13 @@ function renderSimpleList(col,title,desc){
   const inProgress = data.filter(item=>["On Progress","On Track"].includes(item.status)).length;
   const rows=filtered.map(x=>isM
     ? `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.prioritas||"-")}</td><td>${esc(x.pic)}</td><td>${esc(x.target)}</td><td>${inputHtml(pill(x.status))}</td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`
-    : `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.target)}</td><td>${esc(x.pic)}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`).join("") || `<tr><td colspan="${isM?7:7}" class="empty-state">Tidak ada data yang cocok dengan filter.</td></tr>`;
+    : `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.tindakLanjut||"-")}</td><td>${esc(x.target)}</td><td>${esc(x.pic)}</td><td>${esc(x.picDivisi||"-")}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`).join("") || `<tr><td colspan="${isM?7:9}" class="empty-state">Tidak ada data yang cocok dengan filter.</td></tr>`;
   const toolbar = `<div class="tracker-toolbar list-toolbar"><label><span>Entries</span>${filterDropdown(`listEntries:${col}`, viewState.entries, [5,8,10,25])}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(viewState.search)}" placeholder="Cari agenda, PIC, status..." data-list-search="${col}"></div></label><label class="tracker-filter"><span>Status</span>${filterDropdown(`listStatus:${col}`, viewState.status, ["Semua Status", ...statuses])}</label></div>`;
   const summary = isM
     ? stat("Total Agenda",`${data.length}`,"","","clipboard-check")+stat("Berjalan",`${inProgress}`,"","warn","loader-circle")+stat("Selesai",`${done}`,"","","circle-check")+stat("Perhatian",`${attention}`,"","danger","triangle-alert")
     : stat("Total Action",`${data.length}`,"","","list-checks")+stat("Rata-rata",`${avg(data)}%`,"","warn","chart-no-axes-combined")+stat("Selesai",`${done}`,"","","circle-check")+stat("Perhatian",`${attention}`,"","danger","triangle-alert");
-  const headers = isM ? ["Agenda Strategis","Prioritas","PIC","Target Waktu","Status","Catatan / Rencana Solusi","Aksi"] : ["Agenda","Target","PIC","Status","Progress","Catatan / Rencana Solusi","Aksi"];
-  $(`#${col}`).innerHTML = `${hero(title)}<div class="cards-row tracker-summary">${summary}</div><div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>${isM?"Daftar Monitoring":"Daftar Action Items"}</h2></div><button class="primary-btn" data-create="${col}"><i data-lucide="plus"></i> ${isM?"Tambah Agenda":"Tambah Action"}</button></div>${toolbar}${table(headers,rows,`tracker-table ${isM?"monev-table":"action-table"}`,viewState.entries)}</div>`;
-}
-
-function renderPriority(){
-  const data = currentRows("priority");
-  const viewState = listViewState.priority;
-  const query = viewState.search.trim().toLowerCase();
-  const filtered = data.filter(item=>{
-    const matchesSearch = !query || [item.kode,item.isu,item.dampak,item.pic,item.status,item.mitigasi,item.evidence].some(value=>String(value||"").toLowerCase().includes(query));
-    const matchesStatus = viewState.status === "Semua Status" || item.status === viewState.status;
-    return matchesSearch && matchesStatus;
-  });
-  const rows=filtered.map(x=>`<tr><td><strong>${esc(x.kode)}</strong></td><td><strong>${esc(x.isu)}</strong></td><td><b style="color:var(--red)">${esc(x.dampak)}</b></td><td>${esc(x.pic)}</td><td>${pill(x.status)}</td><td>${esc(x.mitigasi)}</td><td><a>${esc(x.evidence)}</a></td><td>${actions("priority",x.id)}</td></tr>`).join("") || `<tr><td colspan="8" class="empty-state">Tidak ada isu yang cocok dengan filter.</td></tr>`;
-  const critical = data.filter(x=>["At Risk","Terkendala","Tertunda"].includes(x.status)).length;
-  const done = data.filter(x=>["Selesai","Tereksekusi"].includes(x.status)).length;
-  const priorityStatuses = [...new Set([...statuses, "Tertunda", "Tereksekusi"])];
-  const toolbar = `<div class="tracker-toolbar list-toolbar"><label><span>Entries</span>${filterDropdown("listEntries:priority", viewState.entries, [5,8,10,25])}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(viewState.search)}" placeholder="Cari isu, PIC, status..." data-list-search="priority"></div></label><label class="tracker-filter"><span>Status</span>${filterDropdown("listStatus:priority", viewState.status, ["Semua Status", ...priorityStatuses])}</label></div>`;
-  $("#priority").innerHTML = `${hero("Isu Prioritas")}
-  <div class="cards-row tracker-summary">${stat("Total Isu",data.length,"","","triangle-alert")}${stat("Prioritas Tinggi",critical,"","danger","octagon-alert")}${stat("Selesai",done,"","","circle-check")}${stat("Mitigasi",data.length-done,"","warn","shield-alert")}</div>
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Isu</h2></div><button class="primary-btn" data-create="priority"><i data-lucide="plus"></i> Tambah Isu</button></div>${toolbar}${table(["ID Rujukan","Deskripsi Hambatan Kritis","Dampak & Risiko","Pemilik Isu","Status Tindakan","Mitigasi & Langkah Selanjutnya","Evidence","Aksi"],rows,"priority-table",viewState.entries)}</div>`;
+  const headers = isM ? ["Agenda Strategis","Prioritas","PIC","Target Waktu","Status","Catatan / Rencana Solusi","Aksi"] : ["Agenda","Tindak Lanjut","Target","PIC","PIC Divisi","Status","Progress","Catatan / Rencana Solusi","Aksi"];
+  $(`#${col}`).innerHTML = `${hero(title)}<div class="cards-row tracker-summary">${summary}</div><div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>${isM?"Daftar Monitoring":"Daftar Action Items"}</h2></div><div class="panel-actions">${exportButton(isM?"Laporan Monev Danareksa":"Laporan Action Items")}<button class="primary-btn" data-create="${col}"><i data-lucide="plus"></i> ${isM?"Tambah Agenda":"Tambah Action"}</button></div></div>${toolbar}${table(headers,rows,`tracker-table ${isM?"monev-table":"action-table"}`,viewState.entries)}</div>`;
 }
 
 function renderReports(){
@@ -800,56 +804,96 @@ function renderReports(){
     </div>
   </div>`;
 }
-function renderMaster(){
+function masterSettings(){
   const grouped = new Map();
   allKpiMasters().forEach(item=>{
     if(!grouped.has(item.settingId)) grouped.set(item.settingId,{...item, items:[]});
     grouped.get(item.settingId).items.push(item);
   });
-  const settings = [...grouped.values()];
+  return [...grouped.values()];
+}
+function renderMasterDetail(settingId){
+  const setting = masterSettings().find(item=>item.settingId===settingId);
+  if(!setting){ activeMasterSettingId = ""; renderMaster(); return; }
+  const items = settingRows(settingId);
+  const totalBobot = Math.round(items.reduce((sum,item)=>sum+(+item.bobot||0),0)*10)/10;
+  const type = setting.jenisKpi === "Kolegial" ? "kolegial" : "dirops";
+  const sectioned = type==="dirops"
+    ? [["I. KPI KOLEGIAL", items.filter(x=>x.kelompok !== "Direktorat")], ["II. KPI DIREKTORAT", items.filter(x=>x.kelompok === "Direktorat")]]
+    : [["KPI DIREKSI KOLEGIAL", items]];
+  const rows = sectioned.map(([label,rows])=>`
+    <tr class="section-row"><td colspan="13">${label}</td></tr>
+    ${rows.map((x,index)=>`<tr><td>${index+1}</td><td><strong>${esc(x.kode||"-")}</strong></td><td>${esc(type==="dirops" ? (x.kelompok||"-") : (x.kategori||"-"))}</td><td><strong>${esc(x.indikator||"-")}</strong></td><td>${esc(x.penanggungJawab||"-")}</td><td>${esc(x.satuan||"-")}</td><td class="cell-number">${esc(x.bobot||0)}%</td><td>${esc(x.polaritas||"Max")}</td><td class="cell-number">${esc(x.target||0)}</td><td class="cell-number">${esc(x.targetTw1||0)}</td><td class="cell-number">${esc(x.targetTw2||0)}</td><td class="cell-number">${esc(x.targetTw3||0)}</td><td class="cell-number">${esc(x.targetTw4||0)}</td></tr>`).join("")}
+  `).join("") || `<tr><td colspan="13" class="empty-state">Belum ada indikator KPI.</td></tr>`;
+  $("#master").innerHTML = `${hero("Master KPI")}
+  <div class="panel master-detail-panel">
+    <div class="panel-head">
+      <div><button type="button" class="soft-btn master-back-btn" data-master-back><i data-lucide="arrow-left"></i> Kembali</button><h2>${esc(setting.settingName)}</h2><span class="subtle">${esc(setting.dasarDokumen||"Tanpa dokumen acuan")}</span></div>
+      <div class="panel-actions">${canSetupMaster()?`<button class="primary-btn" data-setting-edit="${settingId}"><i data-lucide="pencil"></i> Edit Master KPI</button>`:""}</div>
+    </div>
+    <div class="setting-summary-strip">
+      <div><small>Jenis KPI</small><strong>${esc(setting.jenisKpi)}</strong></div>
+      <div><small>Tahun</small><strong>${esc(setting.tahun||state.selectedYear)}</strong></div>
+      <div><small>Status</small><strong>${setting.isOpen===false?"Inactive":"Active"}</strong></div>
+      <div><small>Indikator</small><strong>${items.length}</strong></div>
+      <div><small>Total Bobot</small><strong>${totalBobot}%</strong></div>
+    </div>
+    <div class="table-shell"><div class="table-panel"><table class="kpi-table master-detail-table"><thead><tr><th>No</th><th>Kode</th><th>${type==="dirops"?"Kelompok":"Kategori"}</th><th>Key Performance Indicator</th><th>Penanggung Jawab</th><th>Satuan</th><th>Bobot</th><th>Polaritas</th><th>Target Tahunan</th><th>Target TW1</th><th>Target TW2</th><th>Target TW3</th><th>Target TW4</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  </div>`;
+}
+function renderMaster(){
+  activeMasterSettingId = "";
+  const settings = masterSettings();
   const query = settingSearch.trim().toLowerCase();
   const filteredSettings = settings.filter(x=>!query || [x.settingName,x.jenisKpi,x.tahun,x.createdBy,x.dasarDokumen,x.isOpen?"Open":"Closed"].some(value=>String(value||"").toLowerCase().includes(query)));
-  const masterRows = filteredSettings.map(x=>`<tr><td><strong>${esc(x.settingName)}</strong></td><td>${esc(x.jenisKpi)}</td><td>${esc(x.tahun||state.selectedYear)}</td><td>${esc(x.createdBy||"Direksi")}</td><td>${esc(x.createdAt||"-")}</td><td>${esc(x.publishedAt||"Belum terbit")}</td><td>${pill(x.isOpen ? "Open" : "Closed")}</td><td class="cell-number">${x.items.length}</td><td><div class="actions"><button class="icon" title="Detail" data-setting-view="${x.settingId}"><i data-lucide="eye"></i></button>${canSetupMaster()?`<button class="icon" title="Edit" data-setting-edit="${x.settingId}"><i data-lucide="pencil"></i></button><button class="icon delete" title="Hapus" data-setting-delete="${x.settingId}"><i data-lucide="trash-2"></i></button>`:""}</div></td></tr>`).join("") || `<tr><td colspan="9" class="empty-state">Setting KPI tidak ditemukan.</td></tr>`;
+  const masterRows = filteredSettings.map(x=>{
+    const totalBobot = Math.round(x.items.reduce((sum,item)=>sum+(+item.bobot||0),0)*10)/10;
+    return `<tr><td><strong>${esc(x.settingName)}</strong><span class="table-subtext">${esc(x.dasarDokumen||"Tanpa dokumen acuan")}</span></td><td>${esc(x.jenisKpi)}</td><td>${esc(x.tahun||state.selectedYear)}</td><td>${esc(x.publishedAt||"Belum terbit")}</td><td class="cell-number">${x.items.length}</td><td class="cell-number">${totalBobot}%</td><td>${pill(x.isOpen ? "Active" : "Inactive")}</td><td><div class="actions"><button class="icon" title="View" data-setting-view="${x.settingId}"><i data-lucide="eye"></i></button>${canSetupMaster()?`<button class="icon delete" title="Hapus" data-setting-delete="${x.settingId}"><i data-lucide="trash-2"></i></button>`:""}</div></td></tr>`;
+  }).join("") || `<tr><td colspan="8" class="empty-state">Master KPI tidak ditemukan.</td></tr>`;
   const yearFilter = filterDropdown("masterYear", state.selectedYear, ["2024","2025","2026","2027","2028"]);
-  const searchControl = `<label class="setting-search"><i data-lucide="search"></i><input type="search" value="${esc(settingSearch)}" placeholder="Cari setting KPI..." data-setting-search></label>`;
-  const setupActions = canSetupMaster() ? `<button class="primary-btn" data-setting-create><i data-lucide="plus"></i> Buat Setting KPI</button>` : "";
+  const searchControl = `<label class="setting-search"><i data-lucide="search"></i><input type="search" value="${esc(settingSearch)}" placeholder="Cari Master KPI..." data-setting-search></label>`;
+  const setupActions = canSetupMaster() ? `<button class="primary-btn" data-setting-create><i data-lucide="plus"></i> Buat Master KPI</button>` : "";
   const masterActions = `<div class="panel-actions setting-list-actions">${searchControl}${yearFilter}${setupActions}</div>`;
-  $("#master").innerHTML = `${hero("Setting KPI")}
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Setting KPI</h2></div>${masterActions}</div>${table(["Nama Setting","Jenis KPI","Tahun","Dibuat Oleh","Tanggal Dibuat","Tanggal Terbit","Posisi","Jumlah KPI","Aksi"],masterRows,"monitor-table setting-kpi-table",8)}</div>`;
+  const totalIndicators = filteredSettings.reduce((sum,item)=>sum+item.items.length,0);
+  $("#master").innerHTML = `${hero("Master KPI")}
+  <div class="cards-row tracker-summary">${stat("Master",filteredSettings.length,"","","settings-2")}${stat("Active",filteredSettings.filter(x=>x.isOpen!==false).length,"","","circle-check")}${stat("Inactive",filteredSettings.filter(x=>x.isOpen===false).length,"","","pause-circle")}${stat("Indikator",totalIndicators,"","","list-checks")}</div>
+  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Master KPI</h2></div>${masterActions}</div>${table(["Master","Jenis KPI","Tahun","Tanggal Terbit","Jumlah KPI","Total Bobot","Status","Aksi"],masterRows,"monitor-table setting-kpi-table",8)}</div>`;
 }
 function renderUsers(){
-  const rows=state.users.map(x=>`<tr><td><strong>${esc(x.nama)}</strong></td><td>${esc(x.role)}</td><td>${esc(x.akses)}</td><td>${esc(x.aktivitas)}</td><td>${pill(x.status)}</td><td>${actions("users",x.id)}</td></tr>`).join("");
+  const rows=state.users.map(x=>`<tr><td><strong>${esc(x.nama)}</strong></td><td>${esc(x.role)}</td><td>${esc(x.akses)}</td><td>${esc(x.aktivitas)}</td><td>${pill(x.status)}</td><td>${userActions(x.id)}</td></tr>`).join("");
   const userAction = isAdmin() ? `<button class="primary-btn" data-create="users"><i data-lucide="plus"></i> Tambah User</button>` : "";
-  const roleMatrix = [
-    ["Super Admin","Semua menu, CRUD penuh, user role, dan hapus data"],
-    ["Direksi","Membuat dan menerbitkan Setting KPI, mengatur periode pengisian, serta validasi sumber data"],
-    ["Kepala Divisi","Isi realisasi dan catatan KPI yang ditugaskan; update Tracker Divisi"],
-    ["Admin/Sekretaris","Input realisasi KPI, update Monev/Action/Isu, laporan"]
-  ].map(x=>`<tr><td><strong>${x[0]}</strong></td><td>${x[1]}</td></tr>`).join("");
-  $("#users").innerHTML = `${hero("User & Role")}
+  $("#users").innerHTML = `${hero("Master User & Role")}
   <div class="cards-row tracker-summary">${stat("Pengguna",state.users.length,"","","users")}${stat("Aktif",state.users.filter(x=>x.status==="Aktif").length,"","","user-check")}${stat("Role","4","","","shield-user")}${stat("Mode",state.currentRole,"","","key-round")}</div>
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Pengguna</h2></div>${userAction}</div>${table(["Nama Pengguna","Peran (Role)","Divisi Akses","Aktivitas Terakhir","Status Akun","Tindakan"],rows,"user-table",8)}</div>
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Akses Role</h2></div></div>${table(["Role","Kewenangan Utama"],roleMatrix,"monitor-table role-matrix-table",8)}</div>`;
+  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Pengguna</h2></div>${userAction}</div>${table(["Nama Pengguna","Peran (Role)","Divisi Akses","Aktivitas Terakhir","Status Akun","Tindakan"],rows,"user-table",8)}</div>`;
 }
 
 function applyRoleAccess(){
-  const allowed = allowedViews();
-  if(!allowed.includes(activeView)) activeView = "dashboard";
+  const allowedList = allowedViews();
+  const allowed = new Set(allowedList);
+  if(!allowed.has(activeView)) activeView = allowedList[0] || "dashboard";
   document.querySelectorAll("[data-view]").forEach(item=>{
-    const permitted = allowed.includes(item.dataset.view);
+    const permitted = allowed.has(item.dataset.view);
     item.hidden = !permitted;
+    item.style.display = permitted ? "" : "none";
+    item.setAttribute("aria-hidden", String(!permitted));
     item.classList.toggle("active", permitted && item.dataset.view === activeView);
   });
-  document.querySelectorAll(".view").forEach(view=>view.classList.toggle("active", view.id === activeView));
+  document.querySelectorAll(".view").forEach(view=>{
+    const permitted = allowed.has(view.id);
+    view.hidden = !permitted;
+    view.classList.toggle("active", permitted && view.id === activeView);
+  });
   document.querySelectorAll(".nav-group").forEach(group=>{
-    const hasVisible = [...group.querySelectorAll("[data-view]")].some(item=>!item.hidden);
+    const hasVisible = [...group.querySelectorAll("[data-view]")].some(item=>allowed.has(item.dataset.view));
     group.hidden = !hasVisible;
+    group.style.display = hasVisible ? "" : "none";
+    group.setAttribute("aria-hidden", String(!hasVisible));
   });
 }
 
 function render(){
   tableSeq = 0;
-    renderDashboard(); renderKpi("dirops",`KPI Direktur Operasi PT SIER ${state.selectedYear}`); renderKpi("kolegial",`KPI Direksi Secara Kolegial PT SIER Tahun ${state.selectedYear}`); renderTracker(); renderSimpleList("monev","Monev Danareksa",""); renderSimpleList("actions","Action Items BOD-BOC",""); renderPriority(); renderReports(); renderMaster(); renderUsers();
+    renderDashboard(); renderKpi("dirops",`KPI Direktur Operasi PT SIER ${state.selectedYear}`); renderKpi("kolegial",`KPI Direksi Secara Kolegial PT SIER Tahun ${state.selectedYear}`); renderTracker(); renderSimpleList("monev","Monev Danareksa",""); renderSimpleList("actions","Action Items BOD-BOC",""); renderMaster(); renderUsers();
   applyRoleAccess();
   drawDashboardCharts();
   enableDashboardChartInteractions();
@@ -1152,14 +1196,20 @@ function schema(col){
     kpiMasterDirops:masterDiropsFields,
     kpiMasterKolegial:masterKpiFields,
     kpiMaster:unifiedMasterFields,
-    tracker:[["divisi","Divisi","select",divisionOptions()],["pic","PIC"],["pekerjaan","Pekerjaan","textarea"],["output","Output yang Diharapkan","textarea"],["deadline","Deadline"],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
+    tracker:[["no","No"],["divisi","Divisi","select",divisionOptions()],["pic","PIC"],["pekerjaan","Pekerjaan / Follow-Up","textarea"],["output","Output / Target yang Diharapkan","textarea"],["deadline","Deadline"],["bulan","Bulan Progress","select",["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]],["status","Status","select",statuses],["progress","Progress (%)","number"],["catatanTerakhir","Catatan Terakhir","textarea"]],
     monev:[["agenda","Agenda","textarea"],["prioritas","Prioritas"],["pic","PIC"],["target","Target"],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
-    actions:[["agenda","Agenda","textarea"],["target","Target"],["pic","PIC"],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
+    actions:[["agenda","Agenda","textarea"],["tindakLanjut","Tindak Lanjut","textarea"],["target","Target"],["pic","PIC"],["picDivisi","PIC Divisi","select",divisionOptions()],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
     priority:[["kode","Kode"],["isu","Isu","textarea"],["dampak","Dampak"],["pic","PIC"],["status","Status"],["mitigasi","Mitigasi","textarea"],["evidence","Evidence"]],
     users:[["nama","Nama"],["role","Role","select",["Super Admin","Direksi","Kepala Divisi","Admin/Sekretaris"]],["akses","Akses"],["aktivitas","Aktivitas"],["status","Status","select",["Aktif","Terkunci"]]],
     master:[["tipe","Tipe"],["nama","Nama"],["keterangan","Keterangan","textarea"]]
   };
   return map[col]||map.tracker;
+}
+function trackerAgendaSchema(){
+  return [["no","No"],["divisi","Divisi","select",divisionOptions()],["pic","PIC"],["pekerjaan","Pekerjaan / Follow-Up","textarea"],["output","Output yang Diharapkan","textarea"],["deadline","Deadline"]];
+}
+function userFormSchema(){
+  return [["nama","Nama Pengguna"],["role","Role","select",["Super Admin","Direksi","Kepala Divisi","Admin/Sekretaris"]],["akses","Divisi Akses"],["status","Status Akun","select",["Aktif","Terkunci"]]];
 }
 function applyMasterToForm(col, master){
   if(!master) return;
@@ -1194,6 +1244,20 @@ function setupTrackerDivisionPicker(){
   division.addEventListener("change", sync);
   sync();
 }
+function trackerTableInput(name, value="", type="text", options=[]){
+  if(type === "textarea") return `<textarea name="${name}">${esc(value)}</textarea>`;
+  if(type === "select") return `<select name="${name}">${options.map(option=>`<option value="${esc(option)}" ${String(option)===String(value)?"selected":""}>${esc(option)}</option>`).join("")}</select>`;
+  return `<input type="${type}" name="${name}" value="${esc(value)}">`;
+}
+function syncMasterMetadata(){
+  const kind = document.querySelector('[name="jenisKpi"]')?.value || "dirops";
+  const year = document.querySelector('[name="tahun"]')?.value || state.selectedYear;
+  const label = kind === "dirops" ? "Dirops" : "Kolegial";
+  const name = document.querySelector('[name="settingName"]');
+  const doc = document.querySelector('[name="dasarDokumen"]');
+  if(name) name.value = `KPI ${label} ${year}`;
+  if(doc) doc.value = `Master KPI ${label} Tahun ${year}`;
+}
 function settingRows(settingId){
   return ["dirops","kolegial"].flatMap(type=>(state.kpiMaster[type]||[]).filter(item=>item.settingId===settingId).map(item=>{
     const active = (state[type]||[]).find(row=>row.masterId===item.id || (row.kode===item.kode && String(row.tahun)===String(item.tahun)));
@@ -1223,21 +1287,33 @@ function openKpiSetting(settingId="", readonly=false){
   const type = first.settingType || "dirops";
   modal = { col:"kpiSetting", settingId, readonly, settingType:type };
   $("#crud-form").classList.add("setting-modal");
-  $("#modal-context").textContent = "SETTING KPI";
-  $("#modal-title").textContent = readonly ? "Detail Setting KPI" : settingId ? "Edit Setting KPI" : "Buat Setting KPI";
+  $("#modal-context").textContent = "MASTER KPI";
+  $("#modal-title").textContent = readonly ? "Detail Master KPI" : settingId ? "Edit Master KPI" : "Buat Master KPI";
+  const defaultYear = first.tahun || state.selectedYear;
+  const defaultKind = type === "dirops" ? "Dirops" : "Kolegial";
+  const defaultName = first.settingName || `KPI ${defaultKind} ${defaultYear}`;
+  const defaultDoc = first.dasarDokumen || `Master KPI ${defaultKind} Tahun ${defaultYear}`;
+  const totalBobot = Math.round(rows.reduce((sum,row)=>sum+(+row.bobot||0),0)*10)/10;
+  const summary = `<div class="setting-summary-strip">
+    <div><small>Jenis KPI</small><strong>${esc(type==="dirops"?"Dirops":"Kolegial")}</strong></div>
+    <div><small>Tahun</small><strong>${esc(first.tahun||state.selectedYear)}</strong></div>
+    <div><small>Status</small><strong>${first.isOpen===false?"Inactive":"Active"}</strong></div>
+    <div><small>Indikator</small><strong>${rows.length || 1}</strong></div>
+    <div><small>Total Bobot</small><strong>${totalBobot || 0}%</strong></div>
+  </div>`;
   const metadata = `<div class="setting-meta-grid">
-    <label class="field"><span>Nama Setting</span><input name="settingName" value="${esc(first.settingName||"")}" ${readonly?"disabled":""} required></label>
+    <label class="field"><span>Nama Master KPI (Otomatis)</span><input name="settingName" value="${esc(defaultName)}" ${readonly?"disabled":""} readonly required></label>
+    <label class="field"><span>Dokumen Acuan (Otomatis)</span><input name="dasarDokumen" value="${esc(defaultDoc)}" ${readonly?"disabled":""} readonly></label>
     <label class="field"><span>Jenis KPI</span><select name="jenisKpi" data-setting-type ${readonly?"disabled":""}><option value="dirops" ${type==="dirops"?"selected":""}>Dirops</option><option value="kolegial" ${type==="kolegial"?"selected":""}>Kolegial</option></select></label>
-    <label class="field"><span>Tahun</span><select name="tahun" ${readonly?"disabled":""}>${["2024","2025","2026","2027","2028"].map(y=>`<option ${y===(first.tahun||state.selectedYear)?"selected":""}>${y}</option>`).join("")}</select></label>
     <label class="field"><span>Dibuat Oleh</span><input name="createdBy" value="${esc(first.createdBy||state.profile.name||"Direksi")}" ${readonly?"disabled":""}></label>
+    <label class="field"><span>Tahun Dibuat</span><select name="tahun" ${readonly?"disabled":""}>${["2024","2025","2026","2027","2028"].map(y=>`<option ${y===defaultYear?"selected":""}>${y}</option>`).join("")}</select></label>
     <label class="field"><span>Tanggal Dibuat</span><input type="date" name="createdAt" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(first.createdAt||"")?first.createdAt:"")}" ${readonly?"disabled":""}></label>
     <label class="field"><span>Tanggal Terbit</span><input type="date" name="publishedAt" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(first.publishedAt||"")?first.publishedAt:"")}" ${readonly?"disabled":""}></label>
-    <label class="field"><span>Posisi Pengisian</span><select name="isOpen" ${readonly?"disabled":""}><option value="true" ${first.isOpen!==false?"selected":""}>Open</option><option value="false" ${first.isOpen===false?"selected":""}>Closed</option></select></label>
-    <label class="field"><span>Dasar Dokumen</span><input name="dasarDokumen" value="${esc(first.dasarDokumen||"")}" ${readonly?"disabled":""}></label>
+    <label class="field"><span>Status Master</span><select name="isOpen" ${readonly?"disabled":""}><option value="true" ${first.isOpen!==false?"selected":""}>Active</option><option value="false" ${first.isOpen===false?"selected":""}>Inactive</option></select></label>
   </div>`;
   const bodyRows = (rows.length?rows:[{}]).map(row=>settingKpiRow(row,type,readonly)).join("");
-  $("#form-fields").innerHTML = `${metadata}<div class="setting-table-wrap"><div class="setting-table-head"><strong>Struktur dan Preview KPI</strong>${readonly?"":`<button type="button" class="soft-btn" data-setting-row-add><i data-lucide="plus"></i> Tambah Baris</button>`}</div><div class="table-panel"><table class="setting-editor-table"><thead><tr><th>Kode</th><th>Kelompok/Kategori</th><th>Key Performance Indicator</th><th>Penanggung Jawab</th><th>Satuan</th><th>Bobot</th><th>Polaritas</th><th>Target Tahunan</th><th>Target TW1</th><th>Target TW2</th><th>Target TW3</th><th>Target TW4</th><th>Realisasi TW1</th><th>Realisasi TW2</th><th>Realisasi TW3</th><th>Realisasi TW4</th><th>Catatan / Update</th><th>Capaian %</th><th>Nilai Tertimbang</th>${readonly?"":"<th>Aksi</th>"}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
-  $(".modal-actions").innerHTML = readonly ? `<button type="button" class="soft-btn" data-close-modal>Tutup</button>${canSetupMaster()?`<button type="button" class="primary-btn" data-setting-edit="${settingId}">Edit</button>`:""}` : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan Setting</button>`;
+  $("#form-fields").innerHTML = `${metadata}<div class="setting-table-wrap"><div class="setting-table-head"><strong>${readonly?"Detail Indikator KPI":"Daftar Indikator KPI"}</strong>${readonly?"":`<button type="button" class="soft-btn" data-setting-row-add><i data-lucide="plus"></i> Tambah Indikator</button>`}</div><div class="table-panel"><table class="setting-editor-table"><thead><tr><th>Kode</th><th>Kelompok / Kategori</th><th>Indikator KPI</th><th>Penanggung Jawab</th><th>Satuan</th><th>Bobot</th><th>Polaritas</th><th>Target Tahunan</th><th>Target TW1</th><th>Target TW2</th><th>Target TW3</th><th>Target TW4</th><th>Realisasi TW1</th><th>Realisasi TW2</th><th>Realisasi TW3</th><th>Realisasi TW4</th><th>Catatan / Update</th><th>Capaian %</th><th>Nilai Tertimbang</th>${readonly?"":"<th>Aksi</th>"}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
+  $(".modal-actions").innerHTML = readonly ? `<button type="button" class="soft-btn" data-close-modal>Tutup</button>${canSetupMaster()?`<button type="button" class="primary-btn" data-setting-edit="${settingId}">Edit Master KPI</button>`:""}` : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan Master KPI</button>`;
   $("#crud-modal").classList.add("open");
   refreshIcons();
 }
@@ -1248,7 +1324,7 @@ function openModal(col,rowId){
   const row=rowId?getCollection(col).find(x=>x.id===rowId):{};
   $("#modal-context").textContent=`${col.toUpperCase()} - ${state.currentRole}`;
   $("#modal-title").textContent=rowId?"Edit Data":"Tambah Data";
-  let fields = schema(col);
+  let fields = col==="users" ? userFormSchema() : (!rowId && col==="tracker") ? trackerAgendaSchema() : schema(col);
   if(!rowId && (col==="dirops" || col==="kolegial")){
     const units = [...new Set(activeMasterRows(mastersByYear(col)).map(item=>item.satuan).filter(Boolean))];
     fields = fields.map(field=>field[0]==="satuan" ? ["satuan","Satuan","select",units] : field);
@@ -1271,12 +1347,87 @@ function openModal(col,rowId){
     if(t==="select")return `<label ${base}><span>${l}${mark}</span><select name="${n}" ${disabled}>${opts.map(o=>`<option value="${esc(o)}" ${o===v?"selected":""}>${esc(String(o).split("|")[1]||o)}</option>`)}</select></label>`;
     return `<label ${base}><span>${l}${mark}</span><input type="${t}" name="${n}" value="${esc(v)}" ${disabled}></label>`;
   }).join("");
+  if(rowId && col==="users" && isAdmin()){
+    $("#form-fields").insertAdjacentHTML("beforeend", `<div class="password-fields" data-password-fields hidden>
+      <label class="field"><span>Kata Sandi Baru</span><input type="password" name="passwordBaru" autocomplete="new-password"></label>
+      <label class="field"><span>Konfirmasi Kata Sandi</span><input type="password" name="konfirmasiPassword" autocomplete="new-password"></label>
+    </div>`);
+  }
   setupMasterPicker(masterType);
   if(col==="tracker") setupTrackerDivisionPicker();
+  $(".modal-actions").innerHTML = rowId && col==="users" && isAdmin()
+    ? `<button type="button" class="soft-btn" data-reset-password="${rowId}"><i data-lucide="key-round"></i> Ubah Kata Sandi</button><span class="modal-actions-spacer"></span><button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan User</button>`
+    : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan</button>`;
+  $("#crud-modal").classList.add("open");
+  refreshIcons();
+}
+function openTrackerEditTable(rowId){
+  const row = getCollection("tracker").find(x=>x.id===rowId);
+  if(!row) return;
+  modal = { col:"tracker", rowId, trackerTable:true };
+  $("#crud-form").classList.remove("setting-modal");
+  $("#crud-form").classList.add("tracker-edit-modal");
+  $("#modal-context").textContent = "TRACKER DIVISI";
+  $("#modal-title").textContent = "Edit Tracker Divisi";
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  $("#form-fields").innerHTML = `<div class="tracker-edit-table-wrap">
+    <div class="table-panel">
+      <table class="tracker-edit-table">
+        <thead><tr><th>No</th><th>Divisi</th><th>PIC</th><th>Pekerjaan / Follow-Up</th><th>Output / Target yang Diharapkan</th><th>Deadline</th><th>Bulan Progress</th><th>Status</th><th>Progress (%)</th><th>Catatan Terakhir</th></tr></thead>
+        <tbody><tr>
+          <td>${trackerTableInput("no", row.no || "")}</td>
+          <td>${trackerTableInput("divisi", row.divisi || "", "select", divisionOptions())}</td>
+          <td>${trackerTableInput("pic", row.pic || "")}</td>
+          <td>${trackerTableInput("pekerjaan", row.pekerjaan || "", "textarea")}</td>
+          <td>${trackerTableInput("output", row.output || "", "textarea")}</td>
+          <td>${trackerTableInput("deadline", row.deadline || "")}</td>
+          <td>${trackerTableInput("bulan", row.bulan || "Januari", "select", months)}</td>
+          <td>${trackerTableInput("status", row.status || "Belum Mulai", "select", statuses)}</td>
+          <td>${trackerTableInput("progress", row.progress ?? 0, "number")}</td>
+          <td>${trackerTableInput("catatanTerakhir", row.catatanTerakhir || row.catatan || "", "textarea")}</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>`;
+  setupTrackerDivisionPicker();
   $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan</button>`;
   $("#crud-modal").classList.add("open");
+  refreshIcons();
 }
-function closeModal(){ $("#crud-modal").classList.remove("open"); $("#crud-form").classList.remove("setting-modal"); $("#crud-form").reset(); }
+function openTrackerProgress(rowId){
+  const row = getCollection("tracker").find(x=>x.id===rowId);
+  if(!row) return;
+  modal = { col:"tracker", rowId, progressOnly:true };
+  $("#crud-form").classList.remove("setting-modal","tracker-edit-modal");
+  $("#crud-form").classList.add("tracker-progress-modal");
+  $("#modal-context").textContent = "TRACKER DIVISI";
+  $("#modal-title").textContent = "Update Progress";
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  $("#form-fields").innerHTML = `<div class="tracker-update-context compact">
+    <div><small>No</small><strong>${esc(row.no || "-")}</strong></div>
+    <div><small>Divisi</small><strong>${esc(row.divisi || "-")}</strong></div>
+    <div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div>
+    <div><small>Deadline</small><strong>${esc(row.deadline || "-")}</strong></div>
+    <p><b>${esc(row.pekerjaan || "-")}</b><span>${esc(row.output || "-")}</span></p>
+  </div>
+  <div class="tracker-progress-table-wrap">
+    <div class="table-panel">
+      <table class="tracker-progress-edit-table">
+        <thead><tr><th>Bulan Progress</th><th>Status</th><th>Progress (%)</th><th>Catatan Terakhir</th></tr></thead>
+        <tbody><tr>
+          <td>${trackerTableInput("bulan", row.bulan || "Januari", "select", months)}</td>
+          <td>${trackerTableInput("status", row.status || "Belum Mulai", "select", statuses)}</td>
+          <td>${trackerTableInput("progress", row.progress ?? 0, "number")}</td>
+          <td>${trackerTableInput("catatanTerakhir", row.catatanTerakhir || row.catatan || "", "textarea")}</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>`;
+  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan Progress</button>`;
+  $("#crud-modal").classList.add("open");
+  refreshIcons();
+}
+function closeModal(){ $("#crud-modal").classList.remove("open"); $("#crud-form").classList.remove("setting-modal","tracker-edit-modal","tracker-progress-modal","tracker-history-modal"); $("#crud-form").reset(); }
 function submit(e){
   e.preventDefault();
   if(modal.col==="kpiSetting"){
@@ -1321,7 +1472,7 @@ function submit(e){
     prepared.forEach(row=>syncMasterKpi(type,row));
     state.selectedYear = metadata.tahun;
     closeModal();
-    save(`${modal.settingId?"Update":"Tambah"} Setting KPI ${metadata.settingName}`);
+    save(`${modal.settingId?"Update":"Tambah"} Master KPI ${metadata.settingName}`);
     return;
   }
   if(modal.textField){
@@ -1329,6 +1480,36 @@ function submit(e){
     setCollection(modal.col, getCollection(modal.col).map(x=>x.id===modal.rowId ? {...x, [modal.textField]: vals[modal.textField] || ""} : x));
     closeModal();
     save(`Update ${modal.textField} ${modal.col} oleh ${state.currentRole}`);
+    return;
+  }
+  if(modal.progressOnly){
+    const vals = Object.fromEntries(new FormData(e.target).entries());
+    vals.progress = +vals.progress || 0;
+    const entry = {
+      id:id(),
+      tanggal:new Date().toLocaleString("id-ID"),
+      bulan:vals.bulan || "-",
+      status:vals.status || "-",
+      progress:vals.progress,
+      catatan:vals.catatanTerakhir || "-"
+    };
+    setCollection("tracker", getCollection("tracker").map(x=>x.id===modal.rowId ? {
+      ...x,
+      ...vals,
+      catatan:vals.catatanTerakhir || x.catatan,
+      riwayatProgress:[entry, ...(x.riwayatProgress || [])]
+    } : x));
+    closeModal();
+    save(`Update progress tracker oleh ${state.currentRole}`);
+    return;
+  }
+  if(modal.trackerTable){
+    const vals = Object.fromEntries(new FormData(e.target).entries());
+    vals.progress = +vals.progress || 0;
+    if(vals.divisi === "Lintas Divisi") vals.pic = "ALL Kadiv";
+    setCollection("tracker", getCollection("tracker").map(x=>x.id===modal.rowId ? {...x, ...vals, catatan:vals.catatanTerakhir || x.catatan} : x));
+    closeModal();
+    save(`Update tracker divisi oleh ${state.currentRole}`);
     return;
   }
   const vals=Object.fromEntries(new FormData(e.target).entries());
@@ -1369,6 +1550,26 @@ function submit(e){
     delete vals.masterId;
   }
   if(modal.col==="tracker" && vals.divisi==="Lintas Divisi") vals.pic = "ALL Kadiv";
+  if(modal.col==="users"){
+    const passwordBaru = vals.passwordBaru || "";
+    const konfirmasiPassword = vals.konfirmasiPassword || "";
+    delete vals.passwordBaru;
+    delete vals.konfirmasiPassword;
+    if(passwordBaru || konfirmasiPassword){
+      if(passwordBaru.length < 6){
+        showToast("Kata sandi minimal 6 karakter", "error");
+        return;
+      }
+      if(passwordBaru !== konfirmasiPassword){
+        showToast("Konfirmasi kata sandi tidak cocok", "error");
+        return;
+      }
+      vals.passwordChangedAt = new Date().toLocaleString("id-ID");
+      vals.aktivitas = "Kata sandi diubah baru saja";
+    } else {
+      vals.aktivitas = modal.rowId ? "Diperbarui baru saja" : "Baru dibuat";
+    }
+  }
   schema(modal.col).forEach(([n,,t])=>{if(t==="number" && n in vals) vals[n]=+vals[n]||0});
   if(modal.rowId){
     setCollection(modal.col, getCollection(modal.col).map(x=>x.id===modal.rowId?{...x,...vals}:x));
@@ -1378,6 +1579,13 @@ function submit(e){
     }
   } else {
     const yearlyCols = ["dirops","kolegial","tracker","monev","actions","priority"];
+    if(modal.col==="tracker"){
+      vals.bulan = vals.bulan || "Januari";
+      vals.status = vals.status || "Belum Mulai";
+      vals.progress = +vals.progress || 0;
+      vals.catatanTerakhir = vals.catatanTerakhir || "";
+      vals.riwayatProgress = [];
+    }
     const payload = yearlyCols.includes(modal.col) ? {id:id(), tahun:state.selectedYear, ...vals} : {id:id(), ...vals};
     setCollection(modal.col, [payload, ...getCollection(modal.col)]);
   }
@@ -1389,6 +1597,33 @@ function $(s){ return document.querySelector(s); }
 function openView(col,rowId){
   const row = getCollection(col)?.find(x=>x.id===rowId);
   if(!row) return;
+  if(col === "tracker"){
+    modal = { col, rowId };
+    $("#crud-form").classList.remove("setting-modal","tracker-edit-modal","tracker-progress-modal");
+    $("#crud-form").classList.add("tracker-history-modal");
+    $("#modal-context").textContent = "TRACKER DIVISI";
+    $("#modal-title").textContent = "Riwayat Update Progress";
+    const history = (row.riwayatProgress || []).length ? row.riwayatProgress : [{
+      tanggal:"-",
+      bulan:row.bulan || "-",
+      status:row.status || "-",
+      progress:+row.progress || 0,
+      catatan:row.catatanTerakhir || row.catatan || "-"
+    }];
+    const rows = history.map(item=>`<tr><td>${esc(item.tanggal || "-")}</td><td>${esc(item.bulan || "-")}</td><td>${pill(item.status || "-")}</td><td><div class="tracker-progress"><div class="bar ${(+item.progress||0)<50?"red":(+item.progress||0)<90?"yellow":""}"><span style="width:${+item.progress||0}%"></span></div><b>${+item.progress||0}%</b></div></td><td>${esc(item.catatan || "-")}</td></tr>`).join("");
+    $("#form-fields").innerHTML = `<div class="tracker-update-context compact readonly">
+      <div><small>No</small><strong>${esc(row.no || "-")}</strong></div>
+      <div><small>Divisi</small><strong>${esc(row.divisi || "-")}</strong></div>
+      <div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div>
+      <div><small>Deadline</small><strong>${esc(row.deadline || "-")}</strong></div>
+      <p><b>${esc(row.pekerjaan || "-")}</b><span>${esc(row.output || "-")}</span></p>
+    </div>
+    <div class="tracker-history-wrap"><div class="table-panel"><table class="tracker-history-table"><thead><tr><th>Tanggal Update</th><th>Bulan Progress</th><th>Status</th><th>Progress (%)</th><th>Catatan Terakhir</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Tutup</button><button type="button" class="primary-btn" data-edit-progress="${rowId}">Update Progress</button>`;
+    $("#crud-modal").classList.add("open");
+    refreshIcons();
+    return;
+  }
   modal = { col, rowId };
   $("#modal-context").textContent = col.toUpperCase();
   $("#modal-title").textContent = "Detail Data";
@@ -1460,8 +1695,8 @@ function refreshListView(col, focusSearch=false, caret=0){
     monev: ["Monev Danareksa",""],
     actions: ["Action Items BOD-BOC",""]
   };
-  if(col==="priority") renderPriority();
-  else renderSimpleList(col, configs[col][0], configs[col][1]);
+  if(!configs[col]) return;
+  renderSimpleList(col, configs[col][0], configs[col][1]);
   initPagination();
   refreshIcons();
   if(focusSearch){
@@ -1496,6 +1731,11 @@ document.body.addEventListener("change",e=>{
       if(type==="dirops") cell.innerHTML = `<select data-setting-field="kelompok"><option>Kolegial</option><option>Direktorat</option></select>`;
       else cell.innerHTML = `<input data-setting-field="kategori" placeholder="Kategori KPI">`;
     });
+    syncMasterMetadata();
+    return;
+  }
+  if(modal.col==="kpiSetting" && e.target.matches('[name="tahun"]')){
+    syncMasterMetadata();
     return;
   }
   const entries = e.target.closest("[data-list-entries]");
@@ -1509,10 +1749,11 @@ document.body.addEventListener("change",e=>{
 });
 
 document.body.addEventListener("click",e=>{
-  const nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]");
+  const nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), editProgress=e.target.closest("[data-edit-progress]"), resetPassword=e.target.closest("[data-reset-password]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]"), masterBack=e.target.closest("[data-master-back]");
   if(settingCreate){ openKpiSetting(); return; }
-  if(settingView){ openKpiSetting(settingView.dataset.settingView,true); return; }
+  if(settingView){ activeMasterSettingId = ""; openKpiSetting(settingView.dataset.settingView,true); return; }
   if(settingEdit){ openKpiSetting(settingEdit.dataset.settingEdit,false); return; }
+  if(masterBack){ activeMasterSettingId = ""; renderMaster(); initPagination(); refreshIcons(); return; }
   if(settingRowAdd){
     const type = document.querySelector("[data-setting-type]")?.value || modal.settingType || "dirops";
     document.querySelector(".setting-editor-table tbody")?.insertAdjacentHTML("beforeend",settingKpiRow({},type,false));
@@ -1521,7 +1762,7 @@ document.body.addEventListener("click",e=>{
   }
   if(settingRowDelete){
     const rows = document.querySelectorAll(".setting-kpi-row");
-    if(rows.length<=1){ showToast("Setting KPI harus memiliki minimal satu indikator", "error"); return; }
+    if(rows.length<=1){ showToast("Master KPI harus memiliki minimal satu indikator", "error"); return; }
     settingRowDelete.closest("tr")?.remove();
     return;
   }
@@ -1533,7 +1774,8 @@ document.body.addEventListener("click",e=>{
     state.kpiMaster.dirops = state.kpiMaster.dirops.filter(row=>row.settingId!==settingId);
     state.kpiMaster.kolegial = state.kpiMaster.kolegial.filter(row=>row.settingId!==settingId);
     ["dirops","kolegial"].forEach(type=>state[type]=state[type].filter(row=>row.settingId!==settingId && !oldIds.has(row.masterId)));
-    save("Setting KPI dihapus");
+    if(activeMasterSettingId===settingId) activeMasterSettingId = "";
+    save("Master KPI dihapus");
     return;
   }
   if(dropdownToggle){ const box=dropdownToggle.closest(".ui-dropdown"); document.querySelectorAll(".ui-dropdown.open").forEach(item=>{ if(item!==box) item.classList.remove("open"); }); box?.classList.toggle("open"); return; }
@@ -1559,6 +1801,12 @@ document.body.addEventListener("click",e=>{
       refreshIcons();
       return;
     }
+    if(key==="kpiYear"){
+      state.selectedYear = value;
+      localStorage.setItem(KEY, JSON.stringify(state));
+      render();
+      return;
+    }
     if(key==="trackerEntries") trackerEntries = +value || 8;
     if(key==="trackerDivision") trackerDivisionFilter = value;
     if(key==="trackerStatus") trackerStatusFilter = value;
@@ -1571,6 +1819,16 @@ document.body.addEventListener("click",e=>{
   if(!e.target.closest(".ui-dropdown")) document.querySelectorAll(".ui-dropdown.open").forEach(item=>item.classList.remove("open"));
   if(reportTabBtn){ reportTab = reportTabBtn.dataset.reportTab; renderReports(); refreshIcons(); return; }
   if(copyYear){ copyPreviousYear(); return; }
+  if(editProgress){ openTrackerProgress(editProgress.dataset.editProgress); return; }
+  if(resetPassword){
+    if(!isAdmin()){ showToast("Ubah kata sandi hanya untuk Super Admin", "error"); return; }
+    const fields = document.querySelector("[data-password-fields]");
+    if(fields){
+      fields.hidden = !fields.hidden;
+      if(!fields.hidden) fields.querySelector("input")?.focus();
+    }
+    return;
+  }
   if(textPopup){ openTextPopup(textPopup.dataset.textPopup, textPopup.dataset.id, textPopup.dataset.field); return; }
   if(pageTo){ e.preventDefault(); e.stopPropagation(); goToPage(pageTo.dataset.pageTo, +pageTo.dataset.index); return; }
   if(page){ e.preventDefault(); e.stopPropagation(); changePage(page.dataset.page, +page.dataset.dir); return; }
@@ -1582,8 +1840,14 @@ document.body.addEventListener("click",e=>{
   if(group) group.closest(".nav-group").classList.toggle("open");
   if(create) openModal(create.dataset.create); if(cur){ const col=viewToCollection[activeView]; if(col) openModal(col); }
   if(viewItem) openView(viewItem.dataset.viewItem, viewItem.dataset.id);
-  if(editFromView) openModal(modal.col, modal.rowId);
-  if(edit) openModal(edit.dataset.edit,edit.dataset.id);
+  if(editFromView){
+    if(modal.col === "tracker") openTrackerEditTable(modal.rowId);
+    else openModal(modal.col, modal.rowId);
+  }
+  if(edit){
+    if(edit.dataset.edit === "tracker" && edit.dataset.id) openTrackerEditTable(edit.dataset.id);
+    else openModal(edit.dataset.edit,edit.dataset.id);
+  }
   if(del && !canDelete(del.dataset.delete)) alert("Hapus data hanya untuk Super Admin/Direksi sesuai kewenangan.");
   if(del && canDelete(del.dataset.delete) && confirm("Hapus data ini?")){ setCollection(del.dataset.delete, getCollection(del.dataset.delete).filter(x=>x.id!==del.dataset.id)); save(`Hapus data ${del.dataset.delete}`); }
   if(close) closeModal(); if(div){ activeDivision=div.dataset.div; render(); }
