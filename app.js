@@ -88,10 +88,70 @@ const migratedSettingIds = {};
     }];
   }
 });
+(state.monev || []).forEach(item => {
+  if(!item.bulan) item.bulan = "Januari";
+  if(!Array.isArray(item.riwayatProgress)){
+    item.riwayatProgress = [{
+      id:id(), tanggal:item.updatedAt || "-", bulan:item.bulan || "-",
+      status:item.status || "-", progress:+item.progress || 0,
+      catatan:item.catatan || "-"
+    }];
+  }
+});
 (state.actions || []).forEach(item => {
   if(!item.tindakLanjut) item.tindakLanjut = item.catatan || "";
   if(!item.picDivisi) item.picDivisi = item.divisi || item.akses || "Lintas Divisi";
+  if(!item.bulan) item.bulan = "Januari";
+  if(!Array.isArray(item.riwayatProgress)){
+    item.riwayatProgress = [{
+      id:id(), tanggal:item.updatedAt || "-", bulan:item.bulan || "-",
+      status:item.status || "-", progress:+item.progress || 0,
+      catatan:item.catatan || "-"
+    }];
+  }
 });
+if(!state.demoMinimumRowsV1){
+  const padWithSamples = (collection, samples) => {
+    const rows = state[collection] || [];
+    const needed = Math.max(0, 10 - rows.length);
+    state[collection] = [...rows, ...samples.slice(0, needed).map(item=>({id:id(), tahun:"2026", ...item}))];
+  };
+  padWithSamples("tracker", [
+    {no:"5",divisi:"KSR",divisiTerkait:"KPR/PIER",pic:"M. Rizal",pekerjaan:"Evaluasi efisiensi distribusi air",output:"Rekomendasi penurunan kehilangan air",deadline:"Apr 2026",sumber:"Rapat Operasional",bulan:"Maret",status:"On Progress",progress:55,catatan:"Pengukuran lapangan berjalan.",catatanTerakhir:"Pengukuran lapangan berjalan.",riwayatProgress:[]},
+    {no:"6",divisi:"KPR/PIER",divisiTerkait:"KSR",pic:"N. Putri",pekerjaan:"Kajian suplai air kawasan PIER",output:"Kajian teknis dan rencana implementasi",deadline:"Jun 2026",sumber:"Arahan Direksi",bulan:"Maret",status:"Belum Mulai",progress:0,catatan:"Menunggu data awal.",catatanTerakhir:"Menunggu data awal.",riwayatProgress:[]},
+    {no:"7",divisi:"JSP",divisiTerkait:"Logistik",pic:"F. Akbar",pekerjaan:"Optimalisasi fasilitas tenant",output:"Peningkatan utilisasi fasilitas",deadline:"Jul 2026",sumber:"Monev Bulanan",bulan:"April",status:"On Track",progress:45,catatan:"Inventarisasi fasilitas selesai.",catatanTerakhir:"Inventarisasi fasilitas selesai.",riwayatProgress:[]},
+    {no:"8",divisi:"Logistik",divisiTerkait:"JSP",pic:"I. Maulana",pekerjaan:"Penguatan pengendalian piutang",output:"SOP credit control diterapkan",deadline:"Agt 2026",sumber:"MoM BOD-BOC",bulan:"April",status:"On Progress",progress:35,catatan:"Draft SOP sedang direview.",catatanTerakhir:"Draft SOP sedang direview.",riwayatProgress:[]},
+    {no:"9",divisi:"Lintas Divisi",divisiTerkait:"KSR, KPR/PIER, JSP, Logistik",pic:"ALL Kadiv",pekerjaan:"Penyusunan quick win tiap divisi",output:"Satu quick win siap dijalankan per divisi",deadline:"Sep 2026",sumber:"Rakornas",bulan:"Mei",status:"Belum Mulai",progress:0,catatan:"Menunggu usulan divisi.",catatanTerakhir:"Menunggu usulan divisi.",riwayatProgress:[]},
+    {no:"10",divisi:"KSR",divisiTerkait:"JSP",pic:"A. Firmansyah",pekerjaan:"Integrasi monitoring utilitas",output:"Dashboard monitoring utilitas aktif",deadline:"Okt 2026",sumber:"Program Kerja 2026",bulan:"Mei",status:"On Progress",progress:20,catatan:"Kebutuhan sistem telah dipetakan.",catatanTerakhir:"Kebutuhan sistem telah dipetakan.",riwayatProgress:[]}
+  ]);
+  padWithSamples("monev", [
+    {agenda:"Evaluasi WTP Waduk SIER",prioritas:"Kritis",pic:"Kadiv KSR",target:"Mei 2026",bulan:"Maret",status:"On Progress",progress:45,catatan:"Kajian kapasitas sedang berjalan.",riwayatProgress:[]},
+    {agenda:"Percepatan WILUS PIER",prioritas:"Tindak Lanjut",pic:"Kadiv KPR/PIER",target:"Sep 2026",bulan:"Maret",status:"On Track",progress:35,catatan:"Koordinasi perizinan berlangsung.",riwayatProgress:[]},
+    {agenda:"Digital Water Meter",prioritas:"Kritis",pic:"Kadiv KSR",target:"Des 2026",bulan:"April",status:"At Risk",progress:25,catatan:"Perlu penyelesaian kendala konektivitas.",riwayatProgress:[]},
+    {agenda:"Roadmap Fiber Optik",prioritas:"Pantau",pic:"Kadiv JSP",target:"Jul 2026",bulan:"April",status:"Belum Mulai",progress:0,catatan:"Menunggu konsolidasi kebutuhan.",riwayatProgress:[]},
+    {agenda:"Growth Plan Logistik",prioritas:"Tindak Lanjut",pic:"Kadiv Logistik",target:"Sep 2026",bulan:"Mei",status:"On Progress",progress:30,catatan:"Baseline usaha telah dikumpulkan.",riwayatProgress:[]},
+    {agenda:"Integrasi Estate Management",prioritas:"Pantau",pic:"Tim Lintas Divisi",target:"Okt 2026",bulan:"Mei",status:"On Track",progress:50,catatan:"Pemetaan proses telah selesai.",riwayatProgress:[]}
+  ]);
+  padWithSamples("actions", [
+    {agenda:"Finalisasi Kajian WTP",tindakLanjut:"Lengkapi kajian teknis dan finansial",target:"31 Mei",pic:"M. Rizal",picDivisi:"KSR",bulan:"Maret",status:"On Progress",progress:60,catatan:"Kajian teknis selesai.",riwayatProgress:[]},
+    {agenda:"Perizinan WILUS",tindakLanjut:"Koordinasi rekomendasi pemerintah daerah",target:"30 Sep",pic:"N. Putri",picDivisi:"KPR/PIER",bulan:"Maret",status:"On Track",progress:35,catatan:"Dokumen awal telah disampaikan.",riwayatProgress:[]},
+    {agenda:"Roadmap Klinik Industri",tindakLanjut:"Susun konsep layanan dan proyeksi bisnis",target:"31 Jul",pic:"F. Akbar",picDivisi:"JSP",bulan:"April",status:"Belum Mulai",progress:0,catatan:"Menunggu data layanan.",riwayatProgress:[]},
+    {agenda:"Credit Limit Policy",tindakLanjut:"Finalisasi batas eksposur pelanggan",target:"31 Agt",pic:"I. Maulana",picDivisi:"Logistik",bulan:"April",status:"On Progress",progress:40,catatan:"Draft kebijakan sedang direview.",riwayatProgress:[]},
+    {agenda:"Dashboard Utilitas",tindakLanjut:"Integrasikan data operasional utama",target:"31 Okt",pic:"A. Firmansyah",picDivisi:"KSR",bulan:"Mei",status:"On Progress",progress:20,catatan:"Desain dashboard telah disepakati.",riwayatProgress:[]},
+    {agenda:"Quick Win Divisi",tindakLanjut:"Tetapkan satu proyek prioritas tiap divisi",target:"30 Sep",pic:"ALL Kadiv",picDivisi:"Lintas Divisi",bulan:"Mei",status:"Belum Mulai",progress:0,catatan:"Pengumpulan usulan dimulai.",riwayatProgress:[]}
+  ]);
+  padWithSamples("users", [
+    {nama:"Kepala Divisi KPR/PIER",role:"Kepala Divisi",akses:"KPR/PIER",aktivitas:"1 hari yang lalu",status:"Aktif"},
+    {nama:"Kepala Divisi JSP",role:"Kepala Divisi",akses:"JSP",aktivitas:"1 hari yang lalu",status:"Aktif"},
+    {nama:"Kepala Divisi Logistik",role:"Kepala Divisi",akses:"Logistik",aktivitas:"2 hari yang lalu",status:"Aktif"},
+    {nama:"Admin Operasional",role:"Admin/Sekretaris",akses:"Seluruh Divisi",aktivitas:"3 jam yang lalu",status:"Aktif"},
+    {nama:"Sekretaris Monev",role:"Admin/Sekretaris",akses:"Monev Danareksa",aktivitas:"5 jam yang lalu",status:"Aktif"},
+    {nama:"Direksi Monitoring",role:"Direksi",akses:"Seluruh Divisi",aktivitas:"Kemarin",status:"Aktif"},
+    {nama:"Admin Cadangan",role:"Admin/Sekretaris",akses:"Sekretariat Dirops",aktivitas:"7 hari yang lalu",status:"Terkunci"}
+  ]);
+  state.demoMinimumRowsV1 = true;
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
 (state.tracker || []).map(item=>item.divisi).filter(Boolean).forEach(divisi=>{
   const exists = (state.master || []).some(item=>String(item.tipe || "").toLowerCase()==="divisi" && item.nama===divisi);
   if(!exists) state.master.push({ id:id(), tipe:"Divisi", nama:divisi, keterangan:"Tersinkron dari Tracker Divisi" });
@@ -104,16 +164,17 @@ let activeDivision = "Semua Divisi";
 let trackerSearch = "";
 let trackerDivisionFilter = "Semua Divisi";
 let trackerStatusFilter = "Semua Status";
-let trackerEntries = 8;
+const ENTRY_OPTIONS = [10,25,50];
+let trackerEntries = 10;
 let reportTab = "Dirops";
 let reportMonth = "September";
 let reportYear = "2026";
 let settingSearch = "";
 let activeMasterSettingId = "";
 const listViewState = {
-  monev: { search: "", entries: 8, status: "Semua Status", secondary: "Semua Prioritas" },
-  actions: { search: "", entries: 8, status: "Semua Status", secondary: "Semua PIC" },
-  priority: { search: "", entries: 8, status: "Semua Status", secondary: "Semua PIC" }
+  monev: { search: "", entries: 10, status: "Semua Status", secondary: "Semua Prioritas" },
+  actions: { search: "", entries: 10, status: "Semua Status", secondary: "Semua PIC" },
+  priority: { search: "", entries: 10, status: "Semua Status", secondary: "Semua PIC" }
 };
 let modal = {};
 let tableSeq = 0;
@@ -275,6 +336,10 @@ function applyAuthState(){
   refreshIcons();
 }
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+const formatTrackerCode = value => {
+  const text = String(value ?? "").trim();
+  return /^\d+$/.test(text) ? text.padStart(3, "0") : (text || "-");
+};
 const avg = arr => Math.round(arr.reduce((a,b)=>a+(+b.progress||0),0)/(arr.length||1));
 function latestRealization(x){
   return ["tw4","tw3","tw2","tw1"].map(key=>+x[key] || 0).find(value=>value > 0) || 0;
@@ -411,7 +476,7 @@ function canEditField(col, field, row=null){
   const editable = {
     dirops:["tw1","tw2","tw3","tw4","catatan"],
     kolegial:["tw1","tw2","tw3","tw4","catatan"],
-    tracker:["no","divisi","pic","pekerjaan","output","deadline","bulan","status","progress","catatanTerakhir"],
+    tracker:["no","divisi","divisiTerkait","pic","pekerjaan","output","deadline","sumber","bulan","status","progress","catatanTerakhir"],
     monev:["status","progress","catatan"],
     actions:["tindakLanjut","picDivisi","status","progress","catatan"],
     priority:["status","mitigasi","evidence"],
@@ -464,8 +529,8 @@ function syncMasterKpi(type, master){
   structuralFields.forEach(field=>{ if(master[field] !== undefined) active[field] = master[field]; });
   state[type] = [active, ...rows];
 }
-function table(headers, rows, className="", pageSize=8){
-  const hasNumberColumn = headers.some(header=>String(header).toLowerCase()==="no");
+function table(headers, rows, className="", pageSize=10){
+  const hasNumberColumn = headers.some(header=>["no","kode"].includes(String(header).toLowerCase()));
   let tableHeaders = headers;
   let tableRows = rows;
   if(!hasNumberColumn){
@@ -740,16 +805,16 @@ function renderTracker(){
   const filtered = data.filter(item=>{
     const matchesDivision = trackerDivisionFilter === "Semua Divisi" || item.divisi === trackerDivisionFilter;
     const matchesStatus = trackerStatusFilter === "Semua Status" || item.status === trackerStatusFilter;
-    const matchesSearch = !query || [item.no,item.divisi,item.pic,item.pekerjaan,item.output,item.deadline,item.bulan,item.status,item.catatan,item.catatanTerakhir].some(value=>String(value||"").toLowerCase().includes(query));
+    const matchesSearch = !query || [item.no,item.divisi,item.divisiTerkait,item.pic,item.pekerjaan,item.output,item.deadline,item.sumber,item.bulan,item.status,item.catatan,item.catatanTerakhir].some(value=>String(value||"").toLowerCase().includes(query));
     return matchesDivision && matchesStatus && matchesSearch;
   });
   const completed = data.filter(item=>item.status === "Selesai").length;
   const attention = data.filter(item=>["At Risk","Terkendala"].includes(item.status)).length;
   const divisions = divisionOptions(data);
-  const rows=filtered.map(x=>`<tr><td><strong>${esc(x.divisi)}</strong></td><td>${esc(x.pic)}</td><td><strong>${esc(x.pekerjaan)}</strong></td><td>${inputCell(x.output||"", "tracker", x.id, "output", "textarea")}</td><td>${esc(x.deadline)}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatanTerakhir || x.catatan)}</td><td>${trackerActions(x.id)}</td></tr>`).join("") || `<tr><td colspan="9" class="empty-state">Tidak ada agenda yang cocok dengan filter.</td></tr>`;
-  const toolbar = `<div class="tracker-toolbar"><label class="entries-control"><span>Entries</span>${filterDropdown("trackerEntries", trackerEntries, [5,8,10,25])}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(trackerSearch)}" placeholder="Cari agenda, PIC, divisi..." data-tracker-search></div></label><label class="tracker-filter"><span>Divisi</span>${filterDropdown("trackerDivision", trackerDivisionFilter, ["Semua Divisi", ...divisions])}</label><label class="tracker-filter"><span>Status</span>${filterDropdown("trackerStatus", trackerStatusFilter, ["Semua Status", ...statuses])}</label></div>`;
-  const createButton = canCreate("tracker") ? `<button class="primary-btn" data-create="tracker"><i data-lucide="plus"></i> Tambah Agenda</button>` : "";
-  $("#tracker").innerHTML = `${hero("Tracker Divisi")}<div class="cards-row tracker-summary">${stat("Total Agenda",`${data.length}`,"","","list-checks")}${stat("Rata-rata Progress",`${avg(data)}%`,"","warn","chart-no-axes-combined")}${stat("Selesai",`${completed}`,"","","circle-check")}${stat("Perlu Perhatian",`${attention}`,"","danger","triangle-alert")}</div><div class="panel tracker-panel"><div class="panel-head"><div><h2>Daftar Tracker Divisi</h2></div><div class="panel-actions">${exportButton("Laporan Tracker Divisi")}${createButton}</div></div>${toolbar}${table(["Divisi","PIC","Pekerjaan / Follow-Up","Output yang Diharapkan","Deadline","Status","Progress","Catatan Terakhir","Aksi"],rows,"tracker-table",trackerEntries)}</div>`;
+  const rows=filtered.map(x=>`<tr><td class="cell-number"><strong>${esc(formatTrackerCode(x.no))}</strong></td><td><strong>${esc(x.pekerjaan)}</strong></td><td>${esc(x.deadline || "-")}</td><td><strong>${esc(x.divisi || "-")}</strong></td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatanTerakhir || x.catatan)}</td><td>${trackerActions(x.id)}</td></tr>`).join("") || `<tr><td colspan="8" class="empty-state">Tidak ada agenda yang cocok dengan filter.</td></tr>`;
+  const toolbar = `<div class="tracker-toolbar"><label class="entries-control"><span>Entries</span>${filterDropdown("trackerEntries", trackerEntries, ENTRY_OPTIONS)}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(trackerSearch)}" placeholder="Cari agenda, PIC, divisi..." data-tracker-search></div></label><label class="tracker-filter"><span>Divisi</span>${filterDropdown("trackerDivision", trackerDivisionFilter, ["Semua Divisi", ...divisions])}</label><label class="tracker-filter"><span>Status</span>${filterDropdown("trackerStatus", trackerStatusFilter, ["Semua Status", ...statuses])}</label></div>`;
+  const createButton = canCreate("tracker") ? `<button class="primary-btn btn-add" data-create="tracker"><i data-lucide="plus"></i> Tambah Agenda</button>` : "";
+  $("#tracker").innerHTML = `${hero("Tracker Divisi")}<div class="cards-row tracker-summary">${stat("Total Agenda",`${data.length}`,"","","list-checks")}${stat("Rata-rata Progress",`${avg(data)}%`,"","warn","chart-no-axes-combined")}${stat("Selesai",`${completed}`,"","","circle-check")}${stat("Perlu Perhatian",`${attention}`,"","danger","triangle-alert")}</div><div class="panel tracker-panel"><div class="panel-head"><div><h2>Daftar Tracker Divisi</h2></div><div class="panel-actions">${exportButton("Laporan Tracker Divisi")}${createButton}</div></div>${toolbar}${table(["Kode","Program Kerja / Isu","Target","Divisi Penanggung Jawab","Status","Progres","Update Terakhir","Opsi"],rows,"tracker-table",trackerEntries)}</div>`;
 }
 
 function renderSimpleList(col,title,desc){
@@ -766,14 +831,14 @@ function renderSimpleList(col,title,desc){
   const attention = data.filter(item=>["At Risk","Terkendala"].includes(item.status)).length;
   const inProgress = data.filter(item=>["On Progress","On Track"].includes(item.status)).length;
   const rows=filtered.map(x=>isM
-    ? `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.prioritas||"-")}</td><td>${esc(x.pic)}</td><td>${esc(x.target)}</td><td>${inputHtml(pill(x.status))}</td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`
-    : `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.tindakLanjut||"-")}</td><td>${esc(x.target)}</td><td>${esc(x.pic)}</td><td>${esc(x.picDivisi||"-")}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`).join("") || `<tr><td colspan="${isM?7:9}" class="empty-state">Tidak ada data yang cocok dengan filter.</td></tr>`;
-  const toolbar = `<div class="tracker-toolbar list-toolbar"><label><span>Entries</span>${filterDropdown(`listEntries:${col}`, viewState.entries, [5,8,10,25])}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(viewState.search)}" placeholder="Cari agenda, PIC, status..." data-list-search="${col}"></div></label><label class="tracker-filter"><span>Status</span>${filterDropdown(`listStatus:${col}`, viewState.status, ["Semua Status", ...statuses])}</label></div>`;
+    ? `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.prioritas||"-")}</td><td>${esc(x.pic)}</td><td>${esc(x.target)}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress||0}%"></span></div><b>${x.progress||0}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`
+    : `<tr><td><strong>${esc(x.agenda)}</strong></td><td>${esc(x.tindakLanjut||"-")}</td><td>${esc(x.target)}</td><td>${esc(x.pic)}</td><td>${esc(x.picDivisi||"-")}</td><td>${inputHtml(pill(x.status))}</td><td><div class="tracker-progress"><div class="bar ${x.progress<50?"red":x.progress<90?"yellow":""}"><span style="width:${x.progress}%"></span></div><b>${x.progress}%</b></div></td><td>${inputCell(x.catatan)}</td><td>${actions(col,x.id)}</td></tr>`).join("") || `<tr><td colspan="${isM?8:9}" class="empty-state">Tidak ada data yang cocok dengan filter.</td></tr>`;
+  const toolbar = `<div class="tracker-toolbar list-toolbar"><label><span>Entries</span>${filterDropdown(`listEntries:${col}`, viewState.entries, ENTRY_OPTIONS)}</label><label class="tracker-search"><span>Search</span><div><i data-lucide="search"></i><input type="search" value="${esc(viewState.search)}" placeholder="Cari agenda, PIC, status..." data-list-search="${col}"></div></label><label class="tracker-filter"><span>Status</span>${filterDropdown(`listStatus:${col}`, viewState.status, ["Semua Status", ...statuses])}</label></div>`;
   const summary = isM
     ? stat("Total Agenda",`${data.length}`,"","","clipboard-check")+stat("Berjalan",`${inProgress}`,"","warn","loader-circle")+stat("Selesai",`${done}`,"","","circle-check")+stat("Perhatian",`${attention}`,"","danger","triangle-alert")
     : stat("Total Action",`${data.length}`,"","","list-checks")+stat("Rata-rata",`${avg(data)}%`,"","warn","chart-no-axes-combined")+stat("Selesai",`${done}`,"","","circle-check")+stat("Perhatian",`${attention}`,"","danger","triangle-alert");
-  const headers = isM ? ["Agenda Strategis","Prioritas","PIC","Target Waktu","Status","Catatan / Rencana Solusi","Aksi"] : ["Agenda","Tindak Lanjut","Target","PIC","PIC Divisi","Status","Progress","Catatan / Rencana Solusi","Aksi"];
-  $(`#${col}`).innerHTML = `${hero(title)}<div class="cards-row tracker-summary">${summary}</div><div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>${isM?"Daftar Monitoring":"Daftar Action Items"}</h2></div><div class="panel-actions">${exportButton(isM?"Laporan Monev Danareksa":"Laporan Action Items")}<button class="primary-btn" data-create="${col}"><i data-lucide="plus"></i> ${isM?"Tambah Agenda":"Tambah Action"}</button></div></div>${toolbar}${table(headers,rows,`tracker-table ${isM?"monev-table":"action-table"}`,viewState.entries)}</div>`;
+  const headers = isM ? ["Agenda Strategis","Prioritas","PIC","Target Waktu","Status","Progress","Catatan / Rencana Solusi","Aksi"] : ["Agenda","Tindak Lanjut","Target","PIC","PIC Divisi","Status","Progress","Catatan / Rencana Solusi","Aksi"];
+  $(`#${col}`).innerHTML = `${hero(title)}<div class="cards-row tracker-summary">${summary}</div><div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>${isM?"Daftar Monitoring":"Daftar Action Items"}</h2></div><div class="panel-actions">${exportButton(isM?"Laporan Monev Danareksa":"Laporan Action Items")}<button class="primary-btn btn-add" data-create="${col}"><i data-lucide="plus"></i> ${isM?"Tambah Agenda":"Tambah Action"}</button></div></div>${toolbar}${table(headers,rows,`tracker-table ${isM?"monev-table":"action-table"}`,viewState.entries)}</div>`;
 }
 
 function renderReports(){
@@ -800,7 +865,7 @@ function renderReports(){
     <div class="report-tabs">${tabs.map(tab=>`<button class="tab ${tab===reportTab?"active":""}" data-report-tab="${tab}">${tab}</button>`).join("")}</div>
     <div class="report-detail-card">
       <div><h3>${active.title}</h3><span class="report-meta">${reportMonth} ${reportYear} • ${active.rows} data</span></div>
-      <button class="primary-btn" data-export="${active.title}"><i data-lucide="download"></i> Download</button>
+      <button class="soft-btn" data-export="${active.title}"><i data-lucide="download"></i> Download</button>
     </div>
   </div>`;
 }
@@ -829,7 +894,7 @@ function renderMasterDetail(settingId){
   <div class="panel master-detail-panel">
     <div class="panel-head">
       <div><button type="button" class="soft-btn master-back-btn" data-master-back><i data-lucide="arrow-left"></i> Kembali</button><h2>${esc(setting.settingName)}</h2><span class="subtle">${esc(setting.dasarDokumen||"Tanpa dokumen acuan")}</span></div>
-      <div class="panel-actions">${canSetupMaster()?`<button class="primary-btn" data-setting-edit="${settingId}"><i data-lucide="pencil"></i> Edit Master KPI</button>`:""}</div>
+      <div class="panel-actions">${canSetupMaster()?`<button class="primary-btn btn-update" data-setting-edit="${settingId}"><i data-lucide="pencil"></i> Edit Master KPI</button>`:""}</div>
     </div>
     <div class="setting-summary-strip">
       <div><small>Jenis KPI</small><strong>${esc(setting.jenisKpi)}</strong></div>
@@ -852,19 +917,19 @@ function renderMaster(){
   }).join("") || `<tr><td colspan="8" class="empty-state">Master KPI tidak ditemukan.</td></tr>`;
   const yearFilter = filterDropdown("masterYear", state.selectedYear, ["2024","2025","2026","2027","2028"]);
   const searchControl = `<label class="setting-search"><i data-lucide="search"></i><input type="search" value="${esc(settingSearch)}" placeholder="Cari Master KPI..." data-setting-search></label>`;
-  const setupActions = canSetupMaster() ? `<button class="primary-btn" data-setting-create><i data-lucide="plus"></i> Buat Master KPI</button>` : "";
+  const setupActions = canSetupMaster() ? `<button class="primary-btn btn-add" data-setting-create><i data-lucide="plus"></i> Buat Master KPI</button>` : "";
   const masterActions = `<div class="panel-actions setting-list-actions">${searchControl}${yearFilter}${setupActions}</div>`;
   const totalIndicators = filteredSettings.reduce((sum,item)=>sum+item.items.length,0);
   $("#master").innerHTML = `${hero("Master KPI")}
   <div class="cards-row tracker-summary">${stat("Master",filteredSettings.length,"","","settings-2")}${stat("Active",filteredSettings.filter(x=>x.isOpen!==false).length,"","","circle-check")}${stat("Inactive",filteredSettings.filter(x=>x.isOpen===false).length,"","","pause-circle")}${stat("Indikator",totalIndicators,"","","list-checks")}</div>
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Master KPI</h2></div>${masterActions}</div>${table(["Master","Jenis KPI","Tahun","Tanggal Terbit","Jumlah KPI","Total Bobot","Status","Aksi"],masterRows,"monitor-table setting-kpi-table",8)}</div>`;
+  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Master KPI</h2></div>${masterActions}</div>${table(["Master","Jenis KPI","Tahun","Tanggal Terbit","Jumlah KPI","Total Bobot","Status","Aksi"],masterRows,"monitor-table setting-kpi-table",10)}</div>`;
 }
 function renderUsers(){
   const rows=state.users.map(x=>`<tr><td><strong>${esc(x.nama)}</strong></td><td>${esc(x.role)}</td><td>${esc(x.akses)}</td><td>${esc(x.aktivitas)}</td><td>${pill(x.status)}</td><td>${userActions(x.id)}</td></tr>`).join("");
-  const userAction = isAdmin() ? `<button class="primary-btn" data-create="users"><i data-lucide="plus"></i> Tambah User</button>` : "";
+  const userAction = isAdmin() ? `<button class="primary-btn btn-add" data-create="users"><i data-lucide="plus"></i> Tambah User</button>` : "";
   $("#users").innerHTML = `${hero("Master User & Role")}
   <div class="cards-row tracker-summary">${stat("Pengguna",state.users.length,"","","users")}${stat("Aktif",state.users.filter(x=>x.status==="Aktif").length,"","","user-check")}${stat("Role","4","","","shield-user")}${stat("Mode",state.currentRole,"","","key-round")}</div>
-  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Pengguna</h2></div>${userAction}</div>${table(["Nama Pengguna","Peran (Role)","Divisi Akses","Aktivitas Terakhir","Status Akun","Tindakan"],rows,"user-table",8)}</div>`;
+  <div class="panel tracker-panel list-panel"><div class="panel-head"><div><h2>Daftar Pengguna</h2></div>${userAction}</div>${table(["Nama Pengguna","Peran (Role)","Divisi Akses","Aktivitas Terakhir","Status Akun","Tindakan"],rows,"user-table",10)}</div>`;
 }
 
 function applyRoleAccess(){
@@ -1196,7 +1261,7 @@ function schema(col){
     kpiMasterDirops:masterDiropsFields,
     kpiMasterKolegial:masterKpiFields,
     kpiMaster:unifiedMasterFields,
-    tracker:[["no","No"],["divisi","Divisi","select",divisionOptions()],["pic","PIC"],["pekerjaan","Pekerjaan / Follow-Up","textarea"],["output","Output / Target yang Diharapkan","textarea"],["deadline","Deadline"],["bulan","Bulan Progress","select",["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]],["status","Status","select",statuses],["progress","Progress (%)","number"],["catatanTerakhir","Catatan Terakhir","textarea"]],
+    tracker:[["no","No"],["pekerjaan","Program Kerja / Isu","textarea"],["output","Output / Outcome","textarea"],["deadline","Target"],["sumber","Sumber"],["divisi","Divisi Penanggung Jawab","select",divisionOptions()],["divisiTerkait","Divisi Terkait"],["pic","PIC"],["bulan","Bulan Progress","select",["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"]],["status","Status","select",statuses],["progress","Progress (%)","number"],["catatanTerakhir","Catatan Terakhir","textarea"]],
     monev:[["agenda","Agenda","textarea"],["prioritas","Prioritas"],["pic","PIC"],["target","Target"],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
     actions:[["agenda","Agenda","textarea"],["tindakLanjut","Tindak Lanjut","textarea"],["target","Target"],["pic","PIC"],["picDivisi","PIC Divisi","select",divisionOptions()],["status","Status","select",statuses],["progress","Progress","number"],["catatan","Catatan","textarea"]],
     priority:[["kode","Kode"],["isu","Isu","textarea"],["dampak","Dampak"],["pic","PIC"],["status","Status"],["mitigasi","Mitigasi","textarea"],["evidence","Evidence"]],
@@ -1206,7 +1271,7 @@ function schema(col){
   return map[col]||map.tracker;
 }
 function trackerAgendaSchema(){
-  return [["no","No"],["divisi","Divisi","select",divisionOptions()],["pic","PIC"],["pekerjaan","Pekerjaan / Follow-Up","textarea"],["output","Output yang Diharapkan","textarea"],["deadline","Deadline"]];
+  return [["pekerjaan","Program Kerja / Isu","textarea"],["output","Output / Outcome","textarea"],["deadline","Target"],["sumber","Sumber"],["divisi","Divisi Penanggung Jawab","select",divisionOptions()],["divisiTerkait","Divisi Terkait"],["pic","PIC"]];
 }
 function userFormSchema(){
   return [["nama","Nama Pengguna"],["role","Role","select",["Super Admin","Direksi","Kepala Divisi","Admin/Sekretaris"]],["akses","Divisi Akses"],["status","Status Akun","select",["Aktif","Terkunci"]]];
@@ -1247,7 +1312,8 @@ function setupTrackerDivisionPicker(){
 function trackerTableInput(name, value="", type="text", options=[]){
   if(type === "textarea") return `<textarea name="${name}">${esc(value)}</textarea>`;
   if(type === "select") return `<select name="${name}">${options.map(option=>`<option value="${esc(option)}" ${String(option)===String(value)?"selected":""}>${esc(option)}</option>`).join("")}</select>`;
-  return `<input type="${type}" name="${name}" value="${esc(value)}">`;
+  const progressRange = name === "progress" ? `min="0" max="100" step="1"` : "";
+  return `<input type="${type}" name="${name}" value="${esc(value)}" ${progressRange}>`;
 }
 function syncMasterMetadata(){
   const kind = document.querySelector('[name="jenisKpi"]')?.value || "dirops";
@@ -1312,18 +1378,19 @@ function openKpiSetting(settingId="", readonly=false){
     <label class="field"><span>Status Master</span><select name="isOpen" ${readonly?"disabled":""}><option value="true" ${first.isOpen!==false?"selected":""}>Active</option><option value="false" ${first.isOpen===false?"selected":""}>Inactive</option></select></label>
   </div>`;
   const bodyRows = (rows.length?rows:[{}]).map(row=>settingKpiRow(row,type,readonly)).join("");
-  $("#form-fields").innerHTML = `${metadata}<div class="setting-table-wrap"><div class="setting-table-head"><strong>${readonly?"Detail Indikator KPI":"Daftar Indikator KPI"}</strong>${readonly?"":`<button type="button" class="soft-btn" data-setting-row-add><i data-lucide="plus"></i> Tambah Indikator</button>`}</div><div class="table-panel"><table class="setting-editor-table"><thead><tr><th>Kode</th><th>Kelompok / Kategori</th><th>Indikator KPI</th><th>Penanggung Jawab</th><th>Satuan</th><th>Bobot</th><th>Polaritas</th><th>Target Tahunan</th><th>Target TW1</th><th>Target TW2</th><th>Target TW3</th><th>Target TW4</th><th>Realisasi TW1</th><th>Realisasi TW2</th><th>Realisasi TW3</th><th>Realisasi TW4</th><th>Catatan / Update</th><th>Capaian %</th><th>Nilai Tertimbang</th>${readonly?"":"<th>Aksi</th>"}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
-  $(".modal-actions").innerHTML = readonly ? `<button type="button" class="soft-btn" data-close-modal>Tutup</button>${canSetupMaster()?`<button type="button" class="primary-btn" data-setting-edit="${settingId}">Edit Master KPI</button>`:""}` : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan Master KPI</button>`;
+  $("#form-fields").innerHTML = `${metadata}<div class="setting-table-wrap"><div class="setting-table-head"><strong>${readonly?"Detail Indikator KPI":"Daftar Indikator KPI"}</strong>${readonly?"":`<button type="button" class="soft-btn btn-add-outline" data-setting-row-add><i data-lucide="plus"></i> Tambah Indikator</button>`}</div><div class="table-panel"><table class="setting-editor-table"><thead><tr><th>Kode</th><th>Kelompok / Kategori</th><th>Indikator KPI</th><th>Penanggung Jawab</th><th>Satuan</th><th>Bobot</th><th>Polaritas</th><th>Target Tahunan</th><th>Target TW1</th><th>Target TW2</th><th>Target TW3</th><th>Target TW4</th><th>Realisasi TW1</th><th>Realisasi TW2</th><th>Realisasi TW3</th><th>Realisasi TW4</th><th>Catatan / Update</th><th>Capaian %</th><th>Nilai Tertimbang</th>${readonly?"":"<th>Aksi</th>"}</tr></thead><tbody>${bodyRows}</tbody></table></div></div>`;
+  $(".modal-actions").innerHTML = readonly ? `<button type="button" class="soft-btn" data-close-modal>Tutup</button>${canSetupMaster()?`<button type="button" class="primary-btn btn-update" data-setting-edit="${settingId}">Edit Master KPI</button>`:""}` : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn btn-save">Simpan Master KPI</button>`;
   $("#crud-modal").classList.add("open");
   refreshIcons();
 }
 function openModal(col,rowId){
   if(!rowId && !canCreate(col)){ alert("Role saat ini tidak memiliki akses menambah data ini."); return; }
   modal={col,rowId};
-  $("#crud-form").classList.remove("setting-modal");
+  $("#crud-form").classList.remove("setting-modal","tracker-create-modal");
+  if(!rowId && col==="tracker") $("#crud-form").classList.add("tracker-create-modal");
   const row=rowId?getCollection(col).find(x=>x.id===rowId):{};
   $("#modal-context").textContent=`${col.toUpperCase()} - ${state.currentRole}`;
-  $("#modal-title").textContent=rowId?"Edit Data":"Tambah Data";
+  $("#modal-title").textContent=rowId?"Edit Data":col==="tracker"?"Tambah Agenda Tracker":"Tambah Data";
   let fields = col==="users" ? userFormSchema() : (!rowId && col==="tracker") ? trackerAgendaSchema() : schema(col);
   if(!rowId && (col==="dirops" || col==="kolegial")){
     const units = [...new Set(activeMasterRows(mastersByYear(col)).map(item=>item.satuan).filter(Boolean))];
@@ -1337,15 +1404,26 @@ function openModal(col,rowId){
   const masterSelect = !rowId && masterType
     ? [["masterId","Pilih KPI Master","select",["",...activeMasterRows(mastersByYear(masterType)).map(x=>`${x.id}|${x.kode} - ${x.indikator}`)]]]
     : [];
+  const trackerPlaceholders = {
+    pekerjaan:"Tuliskan program kerja atau isu yang perlu ditindaklanjuti",
+    output:"Tuliskan hasil atau outcome yang diharapkan",
+    deadline:"Contoh: 31 Des 2026 atau Triwulan IV",
+    sumber:"Contoh: MoM Direksi, Monev, atau arahan resmi",
+    divisiTerkait:"Contoh: KSR, JSP (pisahkan dengan koma)",
+    pic:"Nama PIC pelaksana"
+  };
   $("#form-fields").innerHTML=[...masterSelect,...fields].map(([n,l,t="text",opts=[]])=>{
     const v=rowId ? (row?.[n]??"") : (n==="tahun" ? state.selectedYear : "");
     const locked = rowId && !canEditField(col,n,row);
-    const mark = "";
+    const isTrackerCreate = !rowId && col==="tracker";
+    const mark = isTrackerCreate ? `<em>Wajib</em>` : "";
     const base = `class="field ${t==="textarea" ? "wide" : ""} ${locked ? "is-locked" : "is-editable"}"`;
     const disabled = locked ? "disabled" : "";
-    if(t==="textarea")return `<label ${base}><span>${l}</span><textarea name="${n}" ${disabled}>${esc(v)}</textarea></label>`;
-    if(t==="select")return `<label ${base}><span>${l}${mark}</span><select name="${n}" ${disabled}>${opts.map(o=>`<option value="${esc(o)}" ${o===v?"selected":""}>${esc(String(o).split("|")[1]||o)}</option>`)}</select></label>`;
-    return `<label ${base}><span>${l}${mark}</span><input type="${t}" name="${n}" value="${esc(v)}" ${disabled}></label>`;
+    const required = isTrackerCreate ? "required" : "";
+    const placeholder = trackerPlaceholders[n] ? `placeholder="${esc(trackerPlaceholders[n])}"` : "";
+    if(t==="textarea")return `<label ${base}><span>${l}${mark}</span><textarea name="${n}" ${placeholder} ${required} ${disabled}>${esc(v)}</textarea></label>`;
+    if(t==="select")return `<label ${base}><span>${l}${mark}</span><select name="${n}" ${required} ${disabled}>${opts.map(o=>`<option value="${esc(o)}" ${o===v?"selected":""}>${esc(String(o).split("|")[1]||o)}</option>`)}</select></label>`;
+    return `<label ${base}><span>${l}${mark}</span><input type="${t}" name="${n}" value="${esc(v)}" ${placeholder} ${required} ${disabled}></label>`;
   }).join("");
   if(rowId && col==="users" && isAdmin()){
     $("#form-fields").insertAdjacentHTML("beforeend", `<div class="password-fields" data-password-fields hidden>
@@ -1356,8 +1434,8 @@ function openModal(col,rowId){
   setupMasterPicker(masterType);
   if(col==="tracker") setupTrackerDivisionPicker();
   $(".modal-actions").innerHTML = rowId && col==="users" && isAdmin()
-    ? `<button type="button" class="soft-btn" data-reset-password="${rowId}"><i data-lucide="key-round"></i> Ubah Kata Sandi</button><span class="modal-actions-spacer"></span><button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan User</button>`
-    : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan</button>`;
+    ? `<button type="button" class="soft-btn" data-reset-password="${rowId}"><i data-lucide="key-round"></i> Ubah Kata Sandi</button><span class="modal-actions-spacer"></span><button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn btn-save">Simpan User</button>`
+    : `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn btn-save">Simpan</button>`;
   $("#crud-modal").classList.add("open");
   refreshIcons();
 }
@@ -1390,25 +1468,43 @@ function openTrackerEditTable(rowId){
     </div>
   </div>`;
   setupTrackerDivisionPicker();
-  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan</button>`;
+  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn btn-save">Simpan</button>`;
   $("#crud-modal").classList.add("open");
   refreshIcons();
 }
-function openTrackerProgress(rowId){
-  const row = getCollection("tracker").find(x=>x.id===rowId);
+function trackerContextSummary(row){
+  return `<div class="tracker-context-heading">
+    <span class="tracker-code">${esc(formatTrackerCode(row.no))}</span>
+    <div><small>Program Kerja / Isu</small><h3>${esc(row.pekerjaan || "-")}</h3><p>${esc(row.output || "Belum ada Output / Outcome")}</p></div>
+  </div>
+  <div class="tracker-context-meta">
+    <div><small>Target</small><strong>${esc(row.deadline || "-")}</strong></div>
+    <div><small>Divisi Penanggung Jawab</small><strong>${esc(row.divisi || "-")}</strong></div>
+    <div><small>Divisi Terkait</small><strong>${esc(row.divisiTerkait || "-")}</strong></div>
+    <div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div>
+    <div><small>Sumber</small><strong>${esc(row.sumber || "-")}</strong></div>
+  </div>`;
+}
+
+function openProgressUpdate(col, rowId){
+  if(!["tracker","monev","actions"].includes(col)) return;
+  const row = getCollection(col).find(x=>x.id===rowId);
   if(!row) return;
-  modal = { col:"tracker", rowId, progressOnly:true };
+  modal = { col, rowId, progressOnly:true };
   $("#crud-form").classList.remove("setting-modal","tracker-edit-modal");
   $("#crud-form").classList.add("tracker-progress-modal");
-  $("#modal-context").textContent = "TRACKER DIVISI";
+  const labels = { tracker:"TRACKER DIVISI", monev:"MONEV DANAREKSA", actions:"ACTION ITEMS" };
+  $("#modal-context").textContent = labels[col];
   $("#modal-title").textContent = "Update Progress";
   const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-  $("#form-fields").innerHTML = `<div class="tracker-update-context compact">
-    <div><small>No</small><strong>${esc(row.no || "-")}</strong></div>
-    <div><small>Divisi</small><strong>${esc(row.divisi || "-")}</strong></div>
-    <div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div>
-    <div><small>Deadline</small><strong>${esc(row.deadline || "-")}</strong></div>
-    <p><b>${esc(row.pekerjaan || "-")}</b><span>${esc(row.output || "-")}</span></p>
+  const context = col === "tracker"
+    ? trackerContextSummary(row)
+    : col === "monev"
+      ? `<div><small>Prioritas</small><strong>${esc(row.prioritas || "-")}</strong></div><div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div><div><small>Target</small><strong>${esc(row.target || "-")}</strong></div><p><b>${esc(row.agenda || "-")}</b><span>${esc(row.catatan || "Belum ada catatan")}</span></p>`
+      : `<div><small>PIC Divisi</small><strong>${esc(row.picDivisi || "-")}</strong></div><div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div><div><small>Target</small><strong>${esc(row.target || "-")}</strong></div><p><b>${esc(row.agenda || "-")}</b><span>${esc(row.tindakLanjut || "-")}</span></p>`;
+  const noteName = col === "tracker" ? "catatanTerakhir" : "catatan";
+  $("#form-fields").innerHTML = `<div class="${col === "tracker" ? "tracker-context-card" : "tracker-update-context compact"}">
+    ${context}
   </div>
   <div class="tracker-progress-table-wrap">
     <div class="table-panel">
@@ -1418,16 +1514,16 @@ function openTrackerProgress(rowId){
           <td>${trackerTableInput("bulan", row.bulan || "Januari", "select", months)}</td>
           <td>${trackerTableInput("status", row.status || "Belum Mulai", "select", statuses)}</td>
           <td>${trackerTableInput("progress", row.progress ?? 0, "number")}</td>
-          <td>${trackerTableInput("catatanTerakhir", row.catatanTerakhir || row.catatan || "", "textarea")}</td>
+          <td>${trackerTableInput(noteName, row.catatanTerakhir || row.catatan || "", "textarea")}</td>
         </tr></tbody>
       </table>
     </div>
   </div>`;
-  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan Progress</button>`;
+  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-cancel-progress>Batal Update</button><button type="submit" class="primary-btn btn-update">Update Progress</button>`;
   $("#crud-modal").classList.add("open");
   refreshIcons();
 }
-function closeModal(){ $("#crud-modal").classList.remove("open"); $("#crud-form").classList.remove("setting-modal","tracker-edit-modal","tracker-progress-modal","tracker-history-modal"); $("#crud-form").reset(); }
+function closeModal(){ $("#crud-modal").classList.remove("open"); $("#crud-form").classList.remove("setting-modal","tracker-create-modal","tracker-edit-modal","tracker-progress-modal","tracker-history-modal"); $("#crud-form").reset(); }
 function submit(e){
   e.preventDefault();
   if(modal.col==="kpiSetting"){
@@ -1484,23 +1580,25 @@ function submit(e){
   }
   if(modal.progressOnly){
     const vals = Object.fromEntries(new FormData(e.target).entries());
-    vals.progress = +vals.progress || 0;
+    vals.progress = Math.min(100, Math.max(0, +vals.progress || 0));
+    const note = vals.catatanTerakhir || vals.catatan || "-";
     const entry = {
       id:id(),
       tanggal:new Date().toLocaleString("id-ID"),
       bulan:vals.bulan || "-",
       status:vals.status || "-",
       progress:vals.progress,
-      catatan:vals.catatanTerakhir || "-"
+      catatan:note
     };
-    setCollection("tracker", getCollection("tracker").map(x=>x.id===modal.rowId ? {
+    setCollection(modal.col, getCollection(modal.col).map(x=>x.id===modal.rowId ? {
       ...x,
       ...vals,
-      catatan:vals.catatanTerakhir || x.catatan,
+      catatan:note === "-" ? x.catatan : note,
+      ...(modal.col === "tracker" ? {catatanTerakhir:note === "-" ? x.catatanTerakhir : note} : {}),
       riwayatProgress:[entry, ...(x.riwayatProgress || [])]
     } : x));
     closeModal();
-    save(`Update progress tracker oleh ${state.currentRole}`);
+    save(`Update progress ${modal.col} oleh ${state.currentRole}`);
     return;
   }
   if(modal.trackerTable){
@@ -1579,12 +1677,16 @@ function submit(e){
     }
   } else {
     const yearlyCols = ["dirops","kolegial","tracker","monev","actions","priority"];
-    if(modal.col==="tracker"){
+    if(["tracker","monev","actions"].includes(modal.col)){
       vals.bulan = vals.bulan || "Januari";
       vals.status = vals.status || "Belum Mulai";
       vals.progress = +vals.progress || 0;
-      vals.catatanTerakhir = vals.catatanTerakhir || "";
       vals.riwayatProgress = [];
+    }
+    if(modal.col==="tracker"){
+      const nextNo = getCollection("tracker").reduce((max,item)=>Math.max(max, Number(item.no) || 0), 0) + 1;
+      vals.no = String(nextNo).padStart(3, "0");
+      vals.catatanTerakhir = vals.catatanTerakhir || "";
     }
     const payload = yearlyCols.includes(modal.col) ? {id:id(), tahun:state.selectedYear, ...vals} : {id:id(), ...vals};
     setCollection(modal.col, [payload, ...getCollection(modal.col)]);
@@ -1597,11 +1699,12 @@ function $(s){ return document.querySelector(s); }
 function openView(col,rowId){
   const row = getCollection(col)?.find(x=>x.id===rowId);
   if(!row) return;
-  if(col === "tracker"){
+  if(["tracker","monev","actions"].includes(col)){
     modal = { col, rowId };
     $("#crud-form").classList.remove("setting-modal","tracker-edit-modal","tracker-progress-modal");
     $("#crud-form").classList.add("tracker-history-modal");
-    $("#modal-context").textContent = "TRACKER DIVISI";
+    const labels = { tracker:"TRACKER DIVISI", monev:"MONEV DANAREKSA", actions:"ACTION ITEMS" };
+    $("#modal-context").textContent = labels[col];
     $("#modal-title").textContent = "Riwayat Update Progress";
     const history = (row.riwayatProgress || []).length ? row.riwayatProgress : [{
       tanggal:"-",
@@ -1611,15 +1714,16 @@ function openView(col,rowId){
       catatan:row.catatanTerakhir || row.catatan || "-"
     }];
     const rows = history.map(item=>`<tr><td>${esc(item.tanggal || "-")}</td><td>${esc(item.bulan || "-")}</td><td>${pill(item.status || "-")}</td><td><div class="tracker-progress"><div class="bar ${(+item.progress||0)<50?"red":(+item.progress||0)<90?"yellow":""}"><span style="width:${+item.progress||0}%"></span></div><b>${+item.progress||0}%</b></div></td><td>${esc(item.catatan || "-")}</td></tr>`).join("");
-    $("#form-fields").innerHTML = `<div class="tracker-update-context compact readonly">
-      <div><small>No</small><strong>${esc(row.no || "-")}</strong></div>
-      <div><small>Divisi</small><strong>${esc(row.divisi || "-")}</strong></div>
-      <div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div>
-      <div><small>Deadline</small><strong>${esc(row.deadline || "-")}</strong></div>
-      <p><b>${esc(row.pekerjaan || "-")}</b><span>${esc(row.output || "-")}</span></p>
+    const context = col === "tracker"
+      ? trackerContextSummary(row)
+      : col === "monev"
+        ? `<div><small>Prioritas</small><strong>${esc(row.prioritas || "-")}</strong></div><div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div><div><small>Target</small><strong>${esc(row.target || "-")}</strong></div><div><small>Kondisi Saat Ini</small><strong>${esc(`${row.status || "-"} | ${+row.progress || 0}%`)}</strong></div><p><b>${esc(row.agenda || "-")}</b><span>${esc(row.catatan || "Belum ada catatan")}</span></p>`
+        : `<div><small>PIC Divisi</small><strong>${esc(row.picDivisi || "-")}</strong></div><div><small>PIC</small><strong>${esc(row.pic || "-")}</strong></div><div><small>Target</small><strong>${esc(row.target || "-")}</strong></div><div><small>Kondisi Saat Ini</small><strong>${esc(`${row.status || "-"} | ${+row.progress || 0}%`)}</strong></div><p><b>${esc(row.agenda || "-")}</b><span>${esc(row.tindakLanjut || "-")}</span></p>`;
+    $("#form-fields").innerHTML = `<div class="${col === "tracker" ? "tracker-context-card readonly" : "tracker-update-context compact readonly"}">
+      ${context}
     </div>
     <div class="tracker-history-wrap"><div class="table-panel"><table class="tracker-history-table"><thead><tr><th>Tanggal Update</th><th>Bulan Progress</th><th>Status</th><th>Progress (%)</th><th>Catatan Terakhir</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-    $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Tutup</button><button type="button" class="primary-btn" data-edit-progress="${rowId}">Update Progress</button>`;
+    $(".modal-actions").innerHTML = `<button type="button" class="primary-btn btn-update" data-edit-progress="${rowId}" data-progress-col="${col}">Update Progress</button>`;
     $("#crud-modal").classList.add("open");
     refreshIcons();
     return;
@@ -1631,7 +1735,7 @@ function openView(col,rowId){
     const value = row[name] ?? "-";
     return `<div class="detail-field ${String(value).length > 38 ? "wide" : ""}"><span>${label}</span><strong>${esc(value)}</strong></div>`;
   }).join("");
-  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Tutup</button><button type="button" class="primary-btn" data-edit-from-view>Edit</button>`;
+  $(".modal-actions").innerHTML = `<button type="button" class="soft-btn" data-close-modal>Tutup</button><button type="button" class="primary-btn btn-update" data-edit-from-view>Edit</button>`;
   $("#crud-modal").classList.add("open");
 }
 
@@ -1646,7 +1750,7 @@ function openTextPopup(col,rowId,field){
     ? `<label class="field wide is-editable"><span>${field === "catatan" ? "Catatan / Update" : "Isi Detail"}</span><textarea name="${field}" class="text-popup-area">${esc(row[field] || "")}</textarea></label>`
     : `<div class="detail-field wide text-popup-read"><span>${field === "catatan" ? "Catatan / Update" : "Isi Detail"}</span><strong>${esc(row[field] || "-")}</strong></div>`;
   $(".modal-actions").innerHTML = editable
-    ? `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn">Simpan</button>`
+    ? `<button type="button" class="soft-btn" data-close-modal>Batal</button><button type="submit" class="primary-btn btn-save">Simpan</button>`
     : `<button type="button" class="soft-btn" data-close-modal>Tutup</button>`;
   $("#crud-modal").classList.add("open");
 }
@@ -1685,7 +1789,7 @@ document.body.addEventListener("input",e=>{
 document.body.addEventListener("change",e=>{
   if(e.target.matches("[data-report-month]")){ reportMonth = e.target.value; renderReports(); refreshIcons(); return; }
   if(e.target.matches("[data-report-year]")){ reportYear = e.target.value; renderReports(); refreshIcons(); return; }
-  if(e.target.matches("[data-tracker-entries]")) trackerEntries = +e.target.value || 8;
+  if(e.target.matches("[data-tracker-entries]")) trackerEntries = +e.target.value || 10;
   if(e.target.matches("[data-tracker-division]")) trackerDivisionFilter = e.target.value;
   if(e.target.matches("[data-tracker-status]")) trackerStatusFilter = e.target.value;
   if(e.target.matches("[data-tracker-entries], [data-tracker-division], [data-tracker-status]")) refreshTrackerView();
@@ -1743,13 +1847,13 @@ document.body.addEventListener("change",e=>{
   const field = entries || status;
   if(!field) return;
   const col = field.dataset.listEntries || field.dataset.listStatus;
-  if(entries) listViewState[col].entries = +entries.value || 8;
+  if(entries) listViewState[col].entries = +entries.value || 10;
   if(status) listViewState[col].status = status.value;
   refreshListView(col);
 });
 
 document.body.addEventListener("click",e=>{
-  const nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), editProgress=e.target.closest("[data-edit-progress]"), resetPassword=e.target.closest("[data-reset-password]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]"), masterBack=e.target.closest("[data-master-back]");
+  const nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), editProgress=e.target.closest("[data-edit-progress]"), cancelProgress=e.target.closest("[data-cancel-progress]"), resetPassword=e.target.closest("[data-reset-password]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]"), masterBack=e.target.closest("[data-master-back]");
   if(settingCreate){ openKpiSetting(); return; }
   if(settingView){ activeMasterSettingId = ""; openKpiSetting(settingView.dataset.settingView,true); return; }
   if(settingEdit){ openKpiSetting(settingEdit.dataset.settingEdit,false); return; }
@@ -1807,10 +1911,10 @@ document.body.addEventListener("click",e=>{
       render();
       return;
     }
-    if(key==="trackerEntries") trackerEntries = +value || 8;
+    if(key==="trackerEntries") trackerEntries = +value || 10;
     if(key==="trackerDivision") trackerDivisionFilter = value;
     if(key==="trackerStatus") trackerStatusFilter = value;
-    if(key.startsWith("listEntries:")) listViewState[key.split(":")[1]].entries = +value || 8;
+    if(key.startsWith("listEntries:")) listViewState[key.split(":")[1]].entries = +value || 10;
     if(key.startsWith("listStatus:")) listViewState[key.split(":")[1]].status = value;
     if(key.startsWith("list")) refreshListView(key.split(":")[1]);
     else refreshTrackerView();
@@ -1819,7 +1923,8 @@ document.body.addEventListener("click",e=>{
   if(!e.target.closest(".ui-dropdown")) document.querySelectorAll(".ui-dropdown.open").forEach(item=>item.classList.remove("open"));
   if(reportTabBtn){ reportTab = reportTabBtn.dataset.reportTab; renderReports(); refreshIcons(); return; }
   if(copyYear){ copyPreviousYear(); return; }
-  if(editProgress){ openTrackerProgress(editProgress.dataset.editProgress); return; }
+  if(editProgress){ openProgressUpdate(editProgress.dataset.progressCol || "tracker", editProgress.dataset.editProgress); return; }
+  if(cancelProgress){ openView(modal.col, modal.rowId); return; }
   if(resetPassword){
     if(!isAdmin()){ showToast("Ubah kata sandi hanya untuk Super Admin", "error"); return; }
     const fields = document.querySelector("[data-password-fields]");
@@ -1924,7 +2029,7 @@ function changePage(tableId, dir){
   const shell = document.querySelector(`[data-table-shell="${tableId}"]`);
   if(!shell) return;
   const rows = [...shell.querySelectorAll("tbody tr")];
-  const pageSize = +shell.dataset.pageSize || 8;
+  const pageSize = +shell.dataset.pageSize || 10;
   const max = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
   const step = dir > 0 ? 1 : -1;
   shell.dataset.pageIndex = Math.max(0, Math.min(max, (+shell.dataset.pageIndex || 0) + step));
@@ -1935,7 +2040,7 @@ function goToPage(tableId, index){
   const shell = document.querySelector(`[data-table-shell="${tableId}"]`);
   if(!shell) return;
   const rows = [...shell.querySelectorAll("tbody tr")];
-  const pageSize = +shell.dataset.pageSize || 8;
+  const pageSize = +shell.dataset.pageSize || 10;
   const max = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
   shell.dataset.pageIndex = Math.max(0, Math.min(max, index));
   applyPage(shell);
@@ -1943,7 +2048,7 @@ function goToPage(tableId, index){
 }
 function applyPage(shell){
   const rows = [...shell.querySelectorAll("tbody tr")];
-  const pageSize = +shell.dataset.pageSize || 8;
+  const pageSize = +shell.dataset.pageSize || 10;
   const pageIndex = +shell.dataset.pageIndex || 0;
   const start = pageIndex * pageSize;
   rows.forEach((row,i)=>row.style.display = i >= start && i < start + pageSize ? "" : "none");
@@ -1955,7 +2060,15 @@ function applyPage(shell){
   pager.querySelector('[data-dir="1"]').disabled = pageIndex >= max;
   pager.querySelectorAll("[data-page-to]").forEach(btn=>btn.classList.toggle("active", +btn.dataset.index === pageIndex));
 }
-window.addEventListener("load", refreshIcons);
+window.addEventListener("load", () => {
+  refreshIcons();
+  const sidebar = document.querySelector(".sidebar");
+  if(sidebar) sidebar.scrollTop = 0;
+});
+const fixedSidebar = document.querySelector(".sidebar");
+fixedSidebar?.addEventListener("scroll", () => {
+  if(fixedSidebar.scrollTop !== 0) fixedSidebar.scrollTop = 0;
+});
 window.addEventListener("resize", () => {
   clearTimeout(window.__chartResize);
   window.__chartResize = setTimeout(drawDashboardCharts, 120);

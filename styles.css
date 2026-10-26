@@ -2528,6 +2528,50 @@ td:has(.bar) .bar {
   width: min(1500px, calc(100vw - 40px));
 }
 
+.modal-card.tracker-create-modal {
+  width: min(920px, calc(100vw - 32px));
+}
+
+.tracker-create-modal .form-grid {
+  gap: 14px 16px;
+}
+
+.tracker-create-modal .field textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+.tracker-create-modal .field:has([name="pic"]) {
+  grid-column: 1 / -1;
+}
+
+.tracker-create-modal .field input,
+.tracker-create-modal .field select,
+.tracker-create-modal .field textarea {
+  border-color: #d7e3ea;
+  background: #fbfdfe;
+}
+
+.tracker-create-modal .field input:focus,
+.tracker-create-modal .field select:focus,
+.tracker-create-modal .field textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0, 143, 134, .1);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(102, 112, 133, .58);
+  font-weight: 400;
+  opacity: 1;
+}
+
+@media (max-width: 680px) {
+  .tracker-create-modal .field:has([name="pic"]) {
+    grid-column: auto;
+  }
+}
+
 .modal-card.tracker-edit-modal {
   width: min(1380px, calc(100vw - 28px));
 }
@@ -2749,6 +2793,100 @@ td:has(.bar) .bar {
   gap: 2px;
 }
 
+.tracker-update-context.compact p.context-wide {
+  grid-column: 1 / -1;
+  padding: 8px 10px;
+  border-top: 1px solid #e5edf8;
+}
+
+.tracker-context-card {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #d7e3f5;
+  border-radius: 12px;
+  background: #f7fbff;
+}
+
+.tracker-context-heading {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #dfe8f3;
+}
+
+.tracker-code {
+  min-width: 52px;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 1px solid #b9d2e9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #315b9c;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.tracker-context-heading small,
+.tracker-context-meta small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.tracker-context-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.tracker-context-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.tracker-context-meta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tracker-context-meta > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e2eaf3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.tracker-context-meta strong {
+  display: block;
+  color: var(--ink);
+  font-size: .8rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .tracker-context-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tracker-context-meta > div:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 .tracker-update-context.compact p b,
 .tracker-update-context.compact p span {
   display: block;
@@ -2795,6 +2933,17 @@ td:has(.bar) .bar {
   vertical-align: middle;
 }
 
+.tracker-history-table th {
+  text-align: center !important;
+}
+
+.tracker-history-table td:nth-child(1),
+.tracker-history-table td:nth-child(2),
+.tracker-history-table td:nth-child(3),
+.tracker-history-table td:nth-child(4) {
+  text-align: center !important;
+}
+
 .tracker-history-table th:nth-child(1),
 .tracker-history-table td:nth-child(1) { width: 18%; }
 .tracker-history-table th:nth-child(2),
@@ -2806,8 +2955,34 @@ td:has(.bar) .bar {
 .tracker-history-table th:nth-child(5),
 .tracker-history-table td:nth-child(5) {
   width: 34%;
+  text-align: left !important;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.tracker-history-table .tracker-progress {
+  width: 156px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto;
+}
+
+.tracker-history-table .tracker-progress .bar {
+  flex: 0 0 98px;
+  width: 98px;
+  height: 9px;
+  margin: 0;
+  border: 1px solid #d9e1e8;
+  background: #e9eef2;
+}
+
+.tracker-history-table .tracker-progress b {
+  min-width: 42px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .tracker-progress-table-wrap {
@@ -2867,11 +3042,19 @@ td:has(.bar) .bar {
 
 .tracker-progress-edit-table input[name="progress"] {
   text-align: center;
+  font-weight: 750;
+}
+
+.tracker-progress-edit-table select[name="bulan"],
+.tracker-progress-edit-table select[name="status"] {
+  text-align: center;
+  text-align-last: center;
 }
 
 .tracker-progress-edit-table select[name="status"] {
   background: #fff2bf;
   color: #8a5a00;
+  font-weight: 700;
 }
 
 .tracker-progress-edit-table textarea {
@@ -2880,6 +3063,7 @@ td:has(.bar) .bar {
   max-height: 120px;
   resize: vertical;
   line-height: 1.35;
+  text-align: left;
 }
 
 @media (max-width: 760px) {
@@ -3374,6 +3558,55 @@ td {
   background: var(--teal-dark);
   border-color: var(--teal-dark);
   box-shadow: 0 8px 18px rgba(10, 166, 180, .18);
+}
+
+/* Semantic actions: add, save, and update must remain visually distinct. */
+.primary-btn.btn-add {
+  border-color: #008f86;
+  background: #008f86;
+  color: #ffffff;
+}
+
+.primary-btn.btn-add:hover {
+  border-color: #006d66;
+  background: #006d66;
+  box-shadow: 0 8px 18px rgba(0, 143, 134, .2);
+}
+
+.primary-btn.btn-save {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.primary-btn.btn-save:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .2);
+}
+
+.primary-btn.btn-update {
+  border-color: #d97706;
+  background: #d97706;
+  color: #ffffff;
+}
+
+.primary-btn.btn-update:hover {
+  border-color: #b45309;
+  background: #b45309;
+  box-shadow: 0 8px 18px rgba(217, 119, 6, .2);
+}
+
+.soft-btn.btn-add-outline {
+  border-color: rgba(0, 143, 134, .35);
+  background: #eefbf9;
+  color: #006d66;
+}
+
+.soft-btn.btn-add-outline:hover {
+  border-color: #008f86;
+  background: #dff7f3;
+  color: #006d66;
 }
 
 .field input,
@@ -4100,6 +4333,79 @@ td {
 
 .action-table .tracker-progress b {
   text-align: center !important;
+}
+
+/* Monitoring flow: list stays scannable, detail carries the full update history. */
+.monev-table {
+  min-width: 1180px;
+}
+
+.monev-table th:nth-child(6),
+.monev-table td:nth-child(6) {
+  width: 150px;
+  min-width: 150px;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.monev-table th:nth-child(7),
+.monev-table td:nth-child(7) {
+  min-width: 280px;
+  text-align: left !important;
+  white-space: normal;
+}
+
+.monev-table th:nth-child(8),
+.monev-table td:nth-child(8),
+.action-table th:nth-child(9),
+.action-table td:nth-child(9) {
+  width: 92px;
+  min-width: 92px;
+  text-align: center !important;
+}
+
+.monev-table .tracker-progress {
+  width: 140px;
+  max-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.monev-table .tracker-progress .bar {
+  flex: 0 0 82px;
+  width: 82px;
+}
+
+.action-table th:nth-child(6),
+.action-table td:nth-child(6) {
+  width: 125px;
+  min-width: 125px;
+}
+
+.action-table th:nth-child(7),
+.action-table td:nth-child(7) {
+  width: 150px;
+  min-width: 150px;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.action-table th:nth-child(8),
+.action-table td:nth-child(8) {
+  min-width: 280px;
+  text-align: left !important;
+  white-space: normal;
+}
+
+.tracker-history-modal .modal-card,
+.modal-card.tracker-history-modal {
+  width: min(1120px, calc(100vw - 28px));
+}
+
+.tracker-history-modal .tracker-update-context.compact p {
+  padding: 4px 8px;
 }
 
 .table-panel table th {
@@ -5054,4 +5360,142 @@ body {
     width: 100%;
     justify-content: flex-start;
   }
+}
+
+/* Desktop app frame: navigation stays put, only the active page scrolls. */
+@media (min-width: 700px) {
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body:not(.logged-out) {
+    display: grid !important;
+    grid-template-columns: 232px minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+
+  body:not(.logged-out).sidebar-collapsed {
+    grid-template-columns: 86px minmax(0, 1fr) !important;
+  }
+
+  body.logged-out {
+    display: block !important;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body.logged-out .login-screen {
+    width: 100vw;
+    height: 100dvh;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    z-index: 20;
+    width: 232px !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    scrollbar-width: none;
+    transform: none !important;
+  }
+
+  body.sidebar-collapsed .sidebar {
+    width: 86px !important;
+  }
+
+  .shell {
+    grid-column: 2 !important;
+    width: auto !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    overflow: hidden !important;
+  }
+
+  .topbar {
+    position: relative !important;
+    top: auto !important;
+    flex: none;
+  }
+
+  .view {
+    min-height: 0;
+  }
+
+  .view.active {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* Tracker main list: compact operational columns, full detail stays in View. */
+.tracker-table:not(.monev-table):not(.action-table) {
+  min-width: 1120px;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(1),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(1) {
+  width: 76px;
+  min-width: 76px;
+  text-align: center !important;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(2),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(2) {
+  min-width: 280px;
+  text-align: left !important;
+  white-space: normal;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(3),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(3) {
+  width: 130px;
+  min-width: 130px;
+  white-space: nowrap;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(4),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(4) {
+  width: 180px;
+  min-width: 180px;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(5),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(5) {
+  width: 125px;
+  min-width: 125px;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(6),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(6) {
+  width: 170px;
+  min-width: 170px;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(7),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(7) {
+  min-width: 260px;
+  text-align: left !important;
+  white-space: normal;
+}
+
+.tracker-table:not(.monev-table):not(.action-table) th:nth-child(8),
+.tracker-table:not(.monev-table):not(.action-table) td:nth-child(8) {
+  width: 88px;
+  min-width: 88px;
+  text-align: center !important;
 }
