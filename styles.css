@@ -3119,6 +3119,12 @@ textarea::placeholder {
 .tracker-history-table th:nth-child(7), .tracker-history-table td:nth-child(7) { width: 24%; text-align: left !important; white-space: normal; }
 .tracker-history-table th:nth-child(8), .tracker-history-table td:nth-child(8) { width: 12%; text-align: left !important; }
 .tracker-history-table thead th { text-align: center !important; }
+.table-panel table.tracker-history-table thead th { text-align: center !important; vertical-align: middle; }
+.tracker-history-table th:nth-child(1),
+.tracker-history-table td:nth-child(1) { width: 17%; white-space: nowrap !important; text-align: center !important; font-variant-numeric: tabular-nums; }
+.tracker-history-table th:nth-child(7),
+.tracker-history-table td:nth-child(7) { width: 21%; }
+.tracker-history-table th:nth-child(8) { text-align: center !important; }
 .tracker-history-pager { flex: 0 0 auto; padding: 8px 2px 0; border-top: 0; background: transparent; }
 
 .tracker-graph-card { position: relative; height: 100%; min-height: 0; display: grid; grid-template-rows: minmax(0,1fr); padding: 0 6px 4px; border: 1px solid #dce5ef; border-radius: 8px; background: #fff; box-shadow: 0 4px 14px rgba(35,66,110,.06); }
