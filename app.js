@@ -600,7 +600,7 @@ function kpiInputCells(col, row){
 }
 function inputHtml(value){ return `<span class="input-cell">${value}</span>`; }
 
-function hero(title, desc="", stats=""){ return `<div class="hero"><div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ""}</div>${stats ? `<div class="hero-stats">${stats}</div>` : ""}</div>`; }
+function hero(title){ return `<div class="tracker-page-title"><h1>${title}</h1></div>`; }
 function stat(label, value, delta="", tone="", icon="chart-no-axes-combined"){ return `<div class="stat-card"><div class="stat-icon"><i data-lucide="${icon}"></i></div><div class="stat-copy"><small>${label}</small><strong>${value}</strong>${delta ? `<span class="delta ${tone}">${delta}</span>` : ""}</div></div>`; }
 function filterDropdown(key, value, options, attrs=""){
   return `<div class="ui-dropdown table-dropdown" data-dropdown="${key}"><button type="button" class="ui-dropdown-btn" data-dropdown-toggle="${key}"><strong>${esc(value)}</strong><i data-lucide="chevron-down" class="chev"></i></button><div class="ui-dropdown-menu">${options.map(option=>`<button type="button" class="${String(option)===String(value)?"active":""}" data-table-filter="${key}" data-value="${esc(option)}" ${attrs}>${esc(option)}</button>`).join("")}</div></div>`;
@@ -1599,6 +1599,7 @@ function trackerContextSummary(row){
 function trackerDetailTabs(active="progress", locked=false){
   return `<div class="tracker-detail-tabs" role="tablist">
     <button type="button" class="${active==="progress"?"active":""}" data-tracker-detail-tab="progress" aria-selected="${active==="progress"}"><span class="tracker-tab-icon"><i data-lucide="chart-no-axes-combined"></i></span><span>Progress Update</span></button>
+    <button type="button" class="${active==="graph"?"active":""}" data-tracker-detail-tab="graph" aria-selected="${active==="graph"}" ${locked?"disabled":""}><span class="tracker-tab-icon"><i data-lucide="chart-spline"></i></span><span>Graph</span></button>
     <button type="button" class="${active==="chat"?"active":""}" data-tracker-detail-tab="chat" aria-selected="${active==="chat"}" ${locked?"disabled":""}><span class="tracker-tab-icon"><i data-lucide="messages-square"></i></span><span>Chat</span></button>
     <button type="button" class="${active==="log"?"active":""}" data-tracker-detail-tab="log" aria-selected="${active==="log"}" ${locked?"disabled":""}><span class="tracker-tab-icon"><i data-lucide="history"></i></span><span>Log</span></button>
   </div>`;
@@ -1614,9 +1615,60 @@ function trackerActivityTime(value){
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("id-ID",{dateStyle:"long",timeStyle:"medium"});
 }
 
+function trackerProgressYear(item,row){
+  if(item.tahun) return String(item.tahun);
+  const match = String(item.tanggal || "").match(/(?:19|20)\d{2}/);
+  return match?.[0] || String(row.tahun || state.selectedYear);
+}
+
+function renderTrackerProgressGraph(row){
+  const history = [
+    {bulan:"Oktober",tahun:"2026",progress:20},
+    {bulan:"November",tahun:"2026",progress:40},
+    {bulan:"Desember",tahun:"2026",progress:60},
+    {bulan:"Januari",tahun:"2027",progress:80},
+    {bulan:"Februari",tahun:"2027",progress:100}
+  ];
+  const points = history.map((item,index)=>{
+    const progress = Math.min(100,Math.max(0,+item.progress||0));
+    return {...item,x:75+(index*262.5),y:185-(progress*1.4),progress};
+  });
+  const years = [...new Set(points.map(item=>item.tahun))];
+  const ticks = [0,25,50,75,100];
+  const yearBoundary = (points[2].x + points[3].x) / 2;
+  const areaPoints = `${points[0].x},180 ${points.map(item=>`${item.x},${item.y}`).join(" ")} ${points.at(-1).x},180`;
+  return `<div class="tracker-graph-card"><div class="tracker-graph-head"><div><strong></strong><span> · ${years.join(" - ")}</span></div><b>${points.at(-1)?.progress || 0}%</b></div><div class="tracker-graph-canvas"><svg viewBox="0 0 1200 230" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Grafik linear progress Oktober 2026 sampai Februari 2027"><defs><linearGradient id="progressArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#315b9c" stop-opacity=".22"/><stop offset="100%" stop-color="#315b9c" stop-opacity=".02"/></linearGradient></defs><g class="graph-grid">${ticks.map(tick=>`<line x1="90" y1="${180-(tick*1.3)}" x2="1110" y2="${180-(tick*1.3)}"/><text x="76" y="${184-(tick*1.3)}" text-anchor="end">${tick}%</text>`).join("")}${points.map(item=>`<line x1="${item.x}" y1="50" x2="${item.x}" y2="180"/><text x="${item.x}" y="202" text-anchor="middle">${esc(item.bulan)} ${esc(item.tahun)}</text>`).join("")}<text x="28" y="118" text-anchor="middle" class="graph-axis-title" transform="rotate(-90 28 118)">Progress (%)</text><text x="600" y="224" text-anchor="middle" class="graph-axis-title">Bulan Progress</text></g><g class="graph-year-boundary"><rect x="${yearBoundary-9}" y="42" width="18" height="146"/><line x1="${yearBoundary}" y1="40" x2="${yearBoundary}" y2="188"/><text x="${yearBoundary}" y="34" text-anchor="middle">Pergantian Tahun</text></g><polygon class="graph-area" points="${areaPoints}"/><polyline class="graph-line" points="${points.map(item=>`${item.x},${item.y}`).join(" ")}"/>${points.map(item=>`<g class="graph-point"><circle cx="${item.x}" cy="${item.y}" r="5"/><text x="${item.x+9}" y="${item.y-8}">${item.progress}%</text></g>`).join("")}</svg></div></div>`;
+}
+
 function trackerChatAttachments(files=[]){
   if(!files.length) return "";
   return `<div class="tracker-chat-files">${files.map(file=>`<span><i data-lucide="${String(file.type||"").startsWith("image/") ? "image" : "file-text"}"></i><b>${esc(file.name || "Lampiran")}</b>${file.size ? `<small>${esc(formatAttachmentSize(+file.size))}</small>` : ""}</span>`).join("")}</div>`;
+}
+
+function renderTrackerProgressGraphV2(row){
+  const history = trackerProgressGraphHistory(row);
+  const pointGap = history.length > 1 ? 1050/(history.length-1) : 0;
+  const points = history.map((item,index)=>{
+    const progress = Math.min(100,Math.max(0,+item.progress||0));
+    return {...item,x:history.length > 1 ? 75+(index*pointGap) : 600,y:185-(progress*1.4),progress};
+  });
+  const ticks = [0,25,50,75,100];
+  const yearTransitions = points.slice(1).map((item,index)=>item.tahun!==points[index].tahun ? (points[index].x+item.x)/2 : null).filter(value=>value!==null);
+  const curvePath = points.reduce((path,item,index)=>{
+    if(index === 0) return `M ${item.x} ${item.y}`;
+    const previous = points[index-1];
+    const middle = (previous.x + item.x) / 2;
+    return `${path} C ${middle} ${previous.y}, ${middle} ${item.y}, ${item.x} ${item.y}`;
+  },"");
+  const areaPath = `${curvePath} L ${points.at(-1).x} 185 L ${points[0].x} 185 Z`;
+  const pointMarkup = points.map(item=>{
+    const tooltipX = Math.min(1052,Math.max(10,item.x-69));
+    const tooltipY = item.progress >= 80 ? item.y+17 : item.y-72;
+    const shortPeriod = `${item.bulan.slice(0,3)} '${String(item.tahun).slice(-2)}`;
+    return `<g class="graph-point" data-period="${esc(`${item.bulan} ${item.tahun}`)}" data-progress="${item.progress}"><circle cx="${item.x}" cy="${item.y}" r="7"/><g class="graph-value-badge" transform="translate(${item.x-27} ${item.y-36})"><rect width="54" height="24" rx="12"/><text x="27" y="16" text-anchor="middle">${item.progress}%</text></g><g class="graph-hover-tooltip" transform="translate(${tooltipX} ${tooltipY})"><rect width="138" height="54" rx="8"/><text x="12" y="19" class="graph-tooltip-period">${esc(shortPeriod)}</text><circle cx="14" cy="38" r="4"/><text x="24" y="42">Issues Resolved</text><text x="126" y="42" text-anchor="end" class="graph-tooltip-value">${item.progress}%</text></g></g>`;
+  }).join("");
+  const transitionMarkup = yearTransitions.map(x=>`<g class="graph-year-boundary"><line x1="${x}" y1="38" x2="${x}" y2="189"/><text x="${x}" y="30" text-anchor="middle">Year Transition</text></g>`).join("");
+  return `<div class="tracker-graph-card"><div class="tracker-graph-canvas"><svg viewBox="0 0 1200 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Grafik progress ${esc(row.pekerjaan || "isu")}"><defs><linearGradient id="trackerAreaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2f80ed" stop-opacity=".42"/><stop offset="62%" stop-color="#73b1ff" stop-opacity=".2"/><stop offset="100%" stop-color="#dcecff" stop-opacity=".03"/></linearGradient><linearGradient id="trackerLineGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#2f80ed"/><stop offset="100%" stop-color="#1769db"/></linearGradient><filter id="trackerLineGlow" x="-10%" y="-20%" width="120%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2f80ed" flood-opacity=".2"/></filter></defs><g class="graph-grid">${ticks.map(tick=>`<line x1="60" y1="${185-(tick*1.4)}" x2="1140" y2="${185-(tick*1.4)}"/><text x="48" y="${189-(tick*1.4)}" text-anchor="end">${tick}%</text>`).join("")}${points.map(item=>`<line x1="${item.x}" y1="45" x2="${item.x}" y2="185"/><text x="${item.x}" y="212" text-anchor="middle" class="graph-month-label">${esc(item.bulan)}</text><text x="${item.x}" y="229" text-anchor="middle" class="graph-year-label">${esc(item.tahun)}</text>`).join("")}<text x="16" y="116" text-anchor="middle" class="graph-axis-title" transform="rotate(-90 16 116)">Progress (%)</text><text x="600" y="251" text-anchor="middle" class="graph-axis-title">Progress (Bulan)</text></g><path class="graph-area" d="${areaPath}"/>${transitionMarkup}<path class="graph-line" d="${curvePath}"/>${pointMarkup}</svg></div></div>`;
 }
 
 function renderSelectedChatAttachments(){
@@ -1628,7 +1680,39 @@ function renderSelectedChatAttachments(){
   refreshIcons();
 }
 
+function trackerProgressDisplayHistory(row){
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const actual = (row.riwayatProgress || []).length ? [...row.riwayatProgress] : [{
+    tanggal:"6/11/2026, 10.22.20", tahun:String(row.tahun||"2026"), bulan:row.bulan||"Oktober", status:row.status||"On Progress",
+    progress:+row.progress||0, monitoring:row.monitoring||"On Track", catatan:row.catatanTerakhir||row.catatan||"Progress isu diperbarui."
+  }];
+  const needed = Math.max(0,10-actual.length);
+  const latest = actual[0];
+  const latestProgress = Math.min(100,Math.max(0,+latest.progress||+row.progress||0));
+  const latestMonth = Math.max(0,months.findIndex(month=>month.toLowerCase()===String(latest.bulan||row.bulan||"Januari").toLowerCase()));
+  const latestYear = +(trackerProgressYear(latest,row)||row.tahun||2026);
+  const notes = ["Koordinasi tindak lanjut dengan divisi terkait.","Dokumen pendukung tahap awal telah diterima.","Verifikasi kebutuhan dan ruang lingkup sedang berjalan.","Rencana kerja awal telah disepakati bersama.","Pengumpulan data dari PIC masih berlangsung.","PIC dan pembagian tugas telah ditetapkan.","Kick-off dan penyamaan ruang lingkup selesai.","Isu telah dicatat dan menunggu tindak lanjut.","Isu baru dibuat dan belum mulai dikerjakan."];
+  for(let index=1;index<=needed;index++){
+    const date = new Date(latestYear,latestMonth-index,15,9,0,0);
+    const progress = Math.max(0,Math.round(latestProgress*((needed-index)/Math.max(1,needed))));
+    actual.push({tanggal:`15/${String(date.getMonth()+1).padStart(2,"0")}/${date.getFullYear()}, 09.00.00`,tahun:String(date.getFullYear()),bulan:months[date.getMonth()],status:progress ? "On Progress" : "Not Yet",progress,monitoring:"On Track",catatan:notes[index-1]||"Progress isu diperbarui.",lampiran:[]});
+  }
+  return actual;
+}
+
+function trackerProgressGraphHistory(row){
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const grouped = new Map();
+  trackerProgressDisplayHistory(row).slice().reverse().forEach(item=>{
+    const monthIndex = Math.max(0,months.findIndex(month=>month.toLowerCase()===String(item.bulan||"").toLowerCase()));
+    const tahun = String(trackerProgressYear(item,row));
+    grouped.set(`${tahun}-${String(monthIndex).padStart(2,"0")}`,{...item,bulan:months[monthIndex],tahun,monthIndex});
+  });
+  return [...grouped.values()].sort((a,b)=>(+a.tahun-(+b.tahun)) || (a.monthIndex-b.monthIndex));
+}
+
 function renderTrackerDetailTab(row, active="progress"){
+  if(active === "graph") return renderTrackerProgressGraphV2(row);
   if(active === "chat"){
     const messages = (row.chat || []).map(item=>`<article class="tracker-chat-message"><div class="tracker-chat-avatar">${esc(String(trackerActivityUser(item,"U")).trim().charAt(0).toUpperCase() || "U")}</div><div><header><strong>${esc(trackerActivityUser(item,"Pengguna"))}</strong><time>${esc(item.createdAt || "-")}</time></header>${item.message ? `<p>${esc(item.message)}</p>` : ""}${trackerChatAttachments(item.attachments || [])}</div></article>`).join("");
     return `<div class="tracker-chat-panel"><div class="tracker-chat-list">${messages || `<div class="tracker-chat-placeholder"><i data-lucide="messages-square"></i><strong>Belum ada percakapan</strong><span>Mulai diskusi atau kirim dokumen pendukung.</span></div>`}</div><div class="tracker-chat-composer"><div class="tracker-chat-preview" data-chat-attachment-preview hidden></div><div class="tracker-chat-input-row"><label class="icon-btn tracker-chat-attach" title="Lampirkan foto atau PDF"><i data-lucide="paperclip"></i><input type="file" accept="image/*,.pdf,application/pdf" multiple data-chat-attachments></label><textarea rows="1" placeholder="Tulis pesan atau keterangan lampiran..." data-chat-message></textarea><button type="button" class="primary-btn tracker-chat-send" data-send-tracker-chat><i data-lucide="send"></i><span>Kirim</span></button></div><small>Format gambar atau PDF, dapat memilih beberapa file.</small></div></div>`;
@@ -1639,17 +1723,37 @@ function renderTrackerDetailTab(row, active="progress"){
     const logs = [...updates,created].map(item=>`<li><span class="tracker-log-marker"><i data-lucide="history"></i></span><div class="tracker-log-time"><time>${esc(item.time)}</time><small>oleh ${esc(item.user)}</small></div><div class="tracker-log-event"><strong>${esc(item.subject)}</strong><p>${esc(item.detail)}</p><span>Created by: ${esc(item.user)}</span></div></li>`).join("");
     return `<div class="tracker-log-list"><div class="tracker-log-head"><strong>Riwayat Aktivitas</strong><span>${updates.length + 1} aktivitas</span></div><ol>${logs}</ol></div>`;
   }
-  const history = (row.riwayatProgress || []).length ? row.riwayatProgress : [{ tanggal:"-", bulan:row.bulan||"-", status:row.status||"-", progress:+row.progress||0, monitoring:row.monitoring||"On Track", catatan:row.catatanTerakhir||row.catatan||"-" }];
-  const rows = history.map(item=>`<tr><td>${esc(item.tanggal || "-")}</td><td>${esc(item.bulan || "-")}</td><td>${pill(item.status || "-")}</td><td><div class="tracker-progress"><div class="bar ${(+item.progress||0)<50?"red":(+item.progress||0)<90?"yellow":""}"><span style="width:${+item.progress||0}%"></span></div><b>${+item.progress||0}%</b></div></td><td>${pill(item.monitoring || "On Track")}</td><td>${esc(item.catatan || "-")}</td><td>${renderAttachments(item.lampiran || [])}</td></tr>`).join("");
-  return `<div class="tracker-history-wrap"><div class="table-panel"><table class="tracker-history-table"><thead><tr><th>Tanggal Update</th><th>Bulan</th><th>Status</th><th>Progress (%)</th><th>Monitoring</th><th>Catatan</th><th>Lampiran</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const history = trackerProgressDisplayHistory(row);
+  const pageSize = 5;
+  const pageCount = Math.max(1,Math.ceil(history.length/pageSize));
+  const currentPage = Math.min(pageCount,Math.max(1,+modal.trackerProgressPage||1));
+  modal.trackerProgressPage = currentPage;
+  const start = (currentPage-1)*pageSize;
+  const rows = history.slice(start,start+pageSize).map(item=>`<tr><td>${esc(item.tanggal || "-")}</td><td>${esc(trackerProgressYear(item,row))}</td><td>${esc(item.bulan || "-")}</td><td>${pill(item.status || "-")}</td><td><div class="tracker-progress"><div class="bar ${(+item.progress||0)<50?"red":(+item.progress||0)<90?"yellow":""}"><span style="width:${+item.progress||0}%"></span></div><b>${+item.progress||0}%</b></div></td><td>${pill(item.monitoring || "On Track")}</td><td>${esc(item.catatan || "-")}</td><td>${renderAttachments(item.lampiran || [])}</td></tr>`).join("");
+  const pageButtons = Array.from({length:pageCount},(_,index)=>`<button type="button" class="page-number ${currentPage===index+1?"active":""}" data-tracker-progress-page="${index+1}">${index+1}</button>`).join("");
+  const pager = `<div class="table-pager tracker-history-pager"><span>${start+1}-${Math.min(start+pageSize,history.length)} dari ${history.length}</span><div><button type="button" class="icon" data-tracker-progress-page="${currentPage-1}" ${currentPage===1?"disabled":""} title="Sebelumnya"><i data-lucide="chevron-left"></i></button>${pageButtons}<button type="button" class="icon" data-tracker-progress-page="${currentPage+1}" ${currentPage===pageCount?"disabled":""} title="Berikutnya"><i data-lucide="chevron-right"></i></button></div></div>`;
+  return `<div class="tracker-history-wrap"><div class="table-panel"><table class="tracker-history-table"><thead><tr><th>Tanggal Update</th><th>Tahun</th><th>Bulan</th><th>Status</th><th>Progress (%)</th><th>Monitoring</th><th>Catatan</th><th>Lampiran</th></tr></thead><tbody>${rows}</tbody></table></div>${pager}</div>`;
 }
 
 function renderTrackerDetail(row, active="progress"){
+  if(modal.trackerProgressRowId !== row.id){ modal.trackerProgressRowId = row.id; modal.trackerProgressPage = 1; }
   modal.trackerTab = active;
   $("#form-fields").innerHTML = `<div class="tracker-detail-issue-heading">${trackerIssueHeading(row)}</div>${trackerDetailTabs(active)}<div class="tracker-context-card tracker-context-meta-card readonly">${trackerIssueMeta(row)}</div><div class="tracker-tab-content">${renderTrackerDetailTab(row,active)}</div>`;
   $(".modal-actions").innerHTML = active === "progress" ? `<button type="button" class="primary-btn btn-update" data-edit-progress="${row.id}" data-progress-col="tracker">Update Progress</button>` : "";
   refreshIcons();
+  if(active === "graph") enhanceTrackerGraph();
   if(active === "chat") renderSelectedChatAttachments();
+}
+
+function enhanceTrackerGraph(){
+  document.querySelectorAll(".tracker-graph-canvas .graph-point").forEach(point=>{
+    point.setAttribute("tabindex","0");
+    point.setAttribute("aria-label",`${point.dataset.period}: ${point.dataset.progress} persen`);
+  });
+  const line = document.querySelector(".tracker-graph-canvas .graph-line");
+  if(line){
+    line.setAttribute("aria-label","Perkembangan progress isu dari awal hingga pembaruan terbaru");
+  }
 }
 
 function formatAttachmentSize(bytes){
@@ -1685,6 +1789,7 @@ function openProgressUpdate(col, rowId){
   $("#modal-context").textContent = labels[col];
   $("#modal-title").textContent = "Update Progress";
   const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const progressYears = [...new Set(["2024","2025","2026","2027","2028",String(row.tahun||state.selectedYear),...(row.riwayatProgress||[]).map(item=>trackerProgressYear(item,row))])].sort();
   const context = col === "tracker"
     ? trackerContextSummary(row)
     : col === "monev"
@@ -1694,8 +1799,9 @@ function openProgressUpdate(col, rowId){
   const progressEditor = `<div class="tracker-progress-table-wrap">
     <div class="table-panel">
       <table class="tracker-progress-edit-table">
-        <thead><tr><th>Bulan</th><th>Status</th><th>Progress (%)</th><th>Monitoring</th><th>Catatan</th></tr></thead>
+        <thead><tr><th>Tahun</th><th>Bulan</th><th>Status</th><th>Progress (%)</th><th>Monitoring</th><th>Catatan</th></tr></thead>
         <tbody><tr>
+          <td>${trackerTableInput("tahun", row.riwayatProgress?.[0]?.tahun || row.tahun || state.selectedYear, "select", progressYears)}</td>
           <td>${trackerTableInput("bulan", row.bulan || "Januari", "select", months)}</td>
           <td>${trackerTableInput("status", row.status || "Not Yet", "select", trackerStatuses)}</td>
           <td>${trackerTableInput("progress", row.progress ?? 0, "number")}</td>
@@ -1793,6 +1899,7 @@ function submit(e){
       id:id(),
       tanggal:new Date().toLocaleString("id-ID"),
       updatedBy:state.profile.name || state.currentRole,
+      tahun:vals.tahun || state.selectedYear,
       bulan:vals.bulan || "-",
       status:vals.status || "-",
       progress:vals.progress,
@@ -1803,6 +1910,7 @@ function submit(e){
     setCollection(modal.col, getCollection(modal.col).map(x=>x.id===modal.rowId ? {
       ...x,
       ...vals,
+      ...(modal.col === "tracker" ? {tahun:x.tahun} : {}),
       catatan:note === "-" ? x.catatan : note,
       ...(modal.col === "tracker" ? {catatanTerakhir:note === "-" ? x.catatanTerakhir : note} : {}),
       riwayatProgress:[entry, ...(x.riwayatProgress || [])]
@@ -2153,7 +2261,13 @@ document.body.addEventListener("click",e=>{
   }
   if(!e.target.closest(".source-select") && !e.target.closest(".source-select-menu")) document.querySelectorAll(".source-select.open").forEach(closeFloatingSelect);
   if(!e.target.closest(".people-picker") && !e.target.closest(".people-menu")) document.querySelectorAll(".people-picker.open").forEach(closeFloatingSelect);
-  const sendTrackerChat=e.target.closest("[data-send-tracker-chat]"), removeChatAttachment=e.target.closest("[data-remove-chat-attachment]"), trackerDetailTab=e.target.closest("[data-tracker-detail-tab]"), divisionMore=e.target.closest("[data-division-more]"), closeDivisionPopup=e.target.closest("[data-close-division-popup]"), nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), editProgress=e.target.closest("[data-edit-progress]"), cancelProgress=e.target.closest("[data-cancel-progress]"), removeAttachment=e.target.closest("[data-remove-attachment]"), resetPassword=e.target.closest("[data-reset-password]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]"), masterBack=e.target.closest("[data-master-back]");
+  const sendTrackerChat=e.target.closest("[data-send-tracker-chat]"), removeChatAttachment=e.target.closest("[data-remove-chat-attachment]"), trackerProgressPage=e.target.closest("[data-tracker-progress-page]"), trackerDetailTab=e.target.closest("[data-tracker-detail-tab]"), divisionMore=e.target.closest("[data-division-more]"), closeDivisionPopup=e.target.closest("[data-close-division-popup]"), nav=e.target.closest("[data-view]"), create=e.target.closest("[data-create]"), copyYear=e.target.closest("[data-copy-year]"), cur=e.target.closest("[data-create-current]"), viewItem=e.target.closest("[data-view-item]"), edit=e.target.closest("[data-edit]"), editFromView=e.target.closest("[data-edit-from-view]"), editProgress=e.target.closest("[data-edit-progress]"), cancelProgress=e.target.closest("[data-cancel-progress]"), removeAttachment=e.target.closest("[data-remove-attachment]"), resetPassword=e.target.closest("[data-reset-password]"), del=e.target.closest("[data-delete]"), close=e.target.closest("[data-close-modal]"), closeProfile=e.target.closest("[data-close-profile]"), div=e.target.closest("[data-div]"), exp=e.target.closest("[data-export]"), reportTabBtn=e.target.closest("[data-report-tab]"), readNotifications=e.target.closest("[data-read-notifications]"), group=e.target.closest(".group-toggle"), page=e.target.closest("[data-page]"), pageTo=e.target.closest("[data-page-to]"), textPopup=e.target.closest("[data-text-popup]"), bell=e.target.closest(".bell"), profileTrigger=e.target.closest("#profile-trigger"), editProfile=e.target.closest("[data-edit-profile]"), logout=e.target.closest("[data-logout]"), dropdownToggle=e.target.closest("[data-dropdown-toggle]"), dashboardFilter=e.target.closest("[data-dashboard-filter]"), tableFilter=e.target.closest("[data-table-filter]"), settingCreate=e.target.closest("[data-setting-create]"), settingView=e.target.closest("[data-setting-view]"), settingEdit=e.target.closest("[data-setting-edit]"), settingDelete=e.target.closest("[data-setting-delete]"), settingRowAdd=e.target.closest("[data-setting-row-add]"), settingRowDelete=e.target.closest("[data-setting-row-delete]"), masterBack=e.target.closest("[data-master-back]");
+  if(trackerProgressPage && !trackerProgressPage.disabled){
+    modal.trackerProgressPage = +trackerProgressPage.dataset.trackerProgressPage || 1;
+    const row = getCollection("tracker").find(item=>item.id===modal.rowId);
+    if(row) renderTrackerDetail(row,"progress");
+    return;
+  }
   if(removeChatAttachment){ modal.pendingChatAttachments?.splice(+removeChatAttachment.dataset.removeChatAttachment,1); renderSelectedChatAttachments(); return; }
   if(sendTrackerChat){
     const message = document.querySelector("[data-chat-message]")?.value.trim() || "";
